@@ -41,7 +41,7 @@ const FirstPage: React.FC<NavigablePageProps> = ({ onNavigate }) => {
         </HeroCopy>
         <HeroVisual>
           <HeroImage
-            src="/public/image/yurok-altar-vector-v6.png"
+            src="./image/yurok-altar-vector-v6.png"
             alt="유록 온라인 빈소 예시"
           />
         </HeroVisual>
@@ -390,7 +390,7 @@ const HeroCopy = styled.div`
   flex-direction: column;
   justify-content: center;
   background-color: #f7f3eb;
-  background-image: url('/public/image/yurok-ink-line-background.svg');
+  background-image: url('./image/yurok-ink-line-background.svg');
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
