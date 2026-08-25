@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="온라인 빈소 서비스 유록을 한 장으로 소개합니다." />
+  <title>유록 | 한 장으로 보는 온라인 빈소</title>
+  <style>
+    :root {
+      --ink: #26231f;
+      --sub: #6f685f;
+      --brown: #624734;
+      --brown-dark: #392b22;
+      --paper: #f6f1e7;
+      --paper-light: #fcfaf5;
+      --line: #cfc5b7;
+      --soft: #eae2d6;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; min-height: 100%; }
+
+    body {
+      color: var(--ink);
+      background: #d8d3ca;
+      font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      word-break: keep-all;
+    }
+
+    .screen-tools {
+      position: fixed;
+      top: 22px;
+      right: 24px;
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+    }
+
+    .screen-tools button {
+      height: 38px;
+      padding: 0 17px;
+      border: 1px solid rgba(255,255,255,.38);
+      border-radius: 999px;
+      color: white;
+      background: rgba(42,35,29,.78);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+    }
+
+    .sheet {
+      position: relative;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 34px auto;
+      padding: 11mm 12mm 9mm;
+      overflow: hidden;
+      background-color: var(--paper);
+      background-image:
+        linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)),
+        url("./yurok-ink-line-background.svg");
+      background-position: center, 50% 18%;
+      background-repeat: no-repeat;
+      background-size: cover, 135% auto;
+      box-shadow: 0 20px 60px rgba(38,31,25,.22);
+    }
+
+    .sheet::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .22;
+      background-image: radial-gradient(rgba(74,59,45,.28) .45px, transparent .6px);
+      background-size: 5px 5px;
+      mix-blend-mode: multiply;
+    }
+
+    .sheet > * { position: relative; z-index: 1; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 3.2mm;
+      border-bottom: 1px solid rgba(80,61,47,.38);
+    }
+
+    .brand { display: flex; align-items: center; gap: 3mm; }
+
+    .brand-hanja {
+      color: var(--brown-dark);
+      font: 700 19px/1 "Batang", "Noto Serif KR", serif;
+      letter-spacing: -.12em;
+    }
+
+    .brand-divider { width: 1px; height: 17px; background: #b8aa9a; }
+
+    .brand-name {
+      font: 700 14px/1 "Batang", "Noto Serif KR", serif;
+      letter-spacing: .18em;
+    }
+
+    .brand-note { color: #887b6f; font-size: 8px; letter-spacing: .12em; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.04fr .96fr;
+      min-height: 60mm;
+      margin-top: 4mm;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-copy { padding: 5mm 7mm 5mm 1mm; }
+
+    .eyebrow {
+      margin: 0 0 3mm;
+      color: #896e5a;
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .2em;
+    }
+
+    h1 {
+      margin: 0;
+      font: 400 28px/1.42 "Batang", "Noto Serif KR", serif;
+      letter-spacing: -.06em;
+    }
+
+    .hero-lead {
+      margin: 4mm 0 0;
+      color: #665f56;
+      font: 400 11px/1.72 "Batang", "Noto Serif KR", serif;
+    }
+
+    .hero-keywords {
+      display: flex;
+      gap: 2mm;
+      margin-top: 4mm;
+    }
+
+    .hero-keywords span {
+      padding: 1.5mm 2.4mm;
+      border: 1px solid #aa9988;
+      border-radius: 999px;
+      color: #624c3c;
+      background: rgba(255,252,246,.56);
+      font-size: 8px;
+      font-weight: 700;
+    }
+
+    .hero-visual {
+      position: relative;
+      overflow: hidden;
+      min-height: 60mm;
+      background: #b8aa99;
+    }
+
+    .hero-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 58%;
+      filter: saturate(.76) contrast(.96) brightness(.9);
+      transform: scale(1.04);
+    }
+
+    .hero-visual::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(246,241,231,.19), transparent 32%), linear-gradient(0deg, rgba(31,24,19,.42), transparent 48%);
+    }
+
+    .visual-label {
+      position: absolute;
+      left: 4mm;
+      bottom: 3.5mm;
+      z-index: 2;
+      color: rgba(255,255,255,.88);
+      font: 400 8px/1.6 "Batang", serif;
+      letter-spacing: .05em;
+    }
+
+    .section { margin-top: 5mm; }
+
+    .section-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 2.7mm;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font: 700 14px/1.25 "Batang", "Noto Serif KR", serif;
+      letter-spacing: -.035em;
+    }
+
+    .section-title p {
+      margin: 0;
+      color: #8c8175;
+      font-size: 7.5px;
+      letter-spacing: .08em;
+    }
+
+    .journey {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid #bcae9e;
+      background: rgba(255,253,248,.72);
+    }
+
+    .journey-card {
+      position: relative;
+      min-height: 31mm;
+      padding: 3.5mm 3.5mm 3mm;
+      border-right: 1px solid #d1c6b9;
+    }
+
+    .journey-card:last-child { border-right: 0; }
+
+    .journey-card:not(:last-child)::after {
+      content: "›";
+      position: absolute;
+      top: 50%;
+      right: -2mm;
+      z-index: 2;
+      width: 4mm;
+      height: 4mm;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #7e6653;
+      background: var(--paper-light);
+      font: 14px/1 serif;
+      transform: translateY(-50%);
+    }
+
+    .journey-no {
+      display: block;
+      color: #a18d7c;
+      font: 700 8px/1 monospace;
+    }
+
+    .journey-card h3 {
+      margin: 3.5mm 0 1.5mm;
+      font: 700 11px/1 "Batang", serif;
+    }
+
+    .journey-card p {
+      margin: 0;
+      color: #746c63;
+      font-size: 8px;
+      line-height: 1.62;
+    }
+
+    .middle-grid {
+      display: grid;
+      grid-template-columns: 1.18fr .82fr;
+      gap: 4mm;
+      margin-top: 5mm;
+    }
+
+    .experience {
+      min-height: 62mm;
+      padding: 4.5mm;
+      color: #eee8df;
+      background: linear-gradient(145deg, #41342b, #28231f);
+    }
+
+    .experience .section-title { margin-bottom: 4mm; }
+    .experience .section-title h2 { color: white; }
+    .experience .section-title p { color: #b8aa9e; }
+
+    .experience-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm 5mm; }
+
+    .experience-item { display: grid; grid-template-columns: 8mm 1fr; gap: 2mm; }
+
+    .experience-icon {
+      width: 7mm;
+      height: 7mm;
+      display: grid;
+      place-items: center;
+      border: 1px solid #8f7968;
+      border-radius: 50%;
+      color: #e8ddd2;
+      font: 700 10px "Batang", serif;
+    }
+
+    .experience-item h3 {
+      margin: .3mm 0 1mm;
+      color: #f7f3ed;
+      font: 700 9px/1.2 "Batang", serif;
+    }
+
+    .experience-item p {
+      margin: 0;
+      color: #bdb4ac;
+      font-size: 7.5px;
+      line-height: 1.58;
+    }
+
+    .timeline {
+      min-height: 62mm;
+      padding: 4.5mm;
+      border: 1px solid #bcae9e;
+      background: rgba(252,249,243,.76);
+    }
+
+    .timeline-list { position: relative; padding-left: 6mm; }
+
+    .timeline-list::before {
+      content: "";
+      position: absolute;
+      top: 2mm;
+      bottom: 2mm;
+      left: 1.3mm;
+      border-left: 1px solid #a98d76;
+    }
+
+    .time-row { position: relative; margin-bottom: 3.1mm; }
+    .time-row:last-child { margin-bottom: 0; }
+
+    .time-row::before {
+      content: "";
+      position: absolute;
+      top: 1.2mm;
+      left: -5.5mm;
+      width: 2.1mm;
+      height: 2.1mm;
+      border: 1px solid #80614b;
+      border-radius: 50%;
+      background: var(--paper-light);
+    }
+
+    .time-row strong {
+      display: block;
+      margin-bottom: .8mm;
+      color: #5c4433;
+      font: 700 8px/1 "Batang", serif;
+    }
+
+    .time-row p { margin: 0; color: #736a61; font-size: 7.5px; line-height: 1.5; }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1.18fr .82fr;
+      gap: 4mm;
+      margin-top: 5mm;
+    }
+
+    .plans, .channel {
+      padding: 4mm 4.5mm;
+      border-top: 2px solid #5b4332;
+      background: rgba(255,253,248,.7);
+    }
+
+    .plan-rows { display: grid; gap: 2.6mm; }
+
+    .plan-row {
+      display: grid;
+      grid-template-columns: 24mm 1fr;
+      align-items: center;
+      gap: 3mm;
+    }
+
+    .plan-row > strong { font: 700 8px/1.2 "Batang", serif; }
+
+    .plan-options { display: grid; grid-template-columns: repeat(3,1fr); gap: 2mm; }
+
+    .plan-options span {
+      padding: 2.2mm 1mm;
+      border: 1px solid #c4b7a8;
+      color: #5c5147;
+      background: #f9f6f0;
+      font-size: 8px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .plan-note {
+      margin: 3mm 0 0;
+      color: #857a6f;
+      font-size: 7px;
+      line-height: 1.5;
+    }
+
+    .channel-row {
+      display: grid;
+      grid-template-columns: 19mm 1fr;
+      gap: 2.5mm;
+      padding: 2.5mm 0;
+      border-bottom: 1px solid #dbd2c7;
+    }
+
+    .channel-row:last-of-type { border-bottom: 0; }
+    .channel-row strong { color: #5d4635; font: 700 8px/1.3 "Batang", serif; }
+    .channel-row p { margin: 0; color: #756c63; font-size: 7.3px; line-height: 1.52; }
+
+    .privacy {
+      margin-top: 2.5mm;
+      padding: 2mm 2.5mm;
+      color: #675b50;
+      background: #ece4d9;
+      font-size: 7px;
+      line-height: 1.45;
+    }
+
+    footer {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: 4mm;
+      padding-top: 3mm;
+      border-top: 1px solid #a99b8d;
+    }
+
+    .closing {
+      margin: 0;
+      color: #4f3b2d;
+      font: 700 11px/1.4 "Batang", serif;
+    }
+
+    .closing small {
+      display: block;
+      margin-top: 1mm;
+      color: #887d72;
+      font: 400 7px/1.4 "Noto Sans KR", sans-serif;
+      letter-spacing: .04em;
+    }
+
+    .footer-mark { color: #8f8175; font: 700 8px "Batang", serif; letter-spacing: .16em; }
+
+    @media (max-width: 850px) {
+      body { background: var(--paper); }
+      .screen-tools { top: auto; right: 14px; bottom: 14px; }
+      .sheet {
+        width: 100%;
+        min-height: 100vh;
+        margin: 0;
+        padding: 24px;
+        box-shadow: none;
+      }
+    }
+
+    @media print {
+      @page { size: A4 portrait; margin: 0; }
+      html, body { width: 210mm; height: 297mm; background: white; }
+      .screen-tools { display: none !important; }
+      .sheet { width: 210mm; min-height: 297mm; margin: 0; box-shadow: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen-tools" aria-label="페이지 도구">
+    <button type="button" onclick="window.print()">A4로 저장·인쇄</button>
+  </div>
+
+  <main class="sheet">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-hanja">遺錄</span>
+        <span class="brand-divider" aria-hidden="true"></span>
+        <span class="brand-name">유록</span>
+      </div>
+      <span class="brand-note">남길 遺 · 기록할 錄　|　온라인 빈소 서비스</span>
+    </header>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">멀리 있어도 함께하는 추모 경험</p>
+        <h1>조용히 보내는 장례에도<br />함께 기억할 자리는 필요합니다.</h1>
+        <p class="hero-lead">
+          유록은 무빈소 장례를 치르는 가족과 조문객을 위한 온라인 빈소입니다.<br />
+          장례의 마음과 절차를 온라인에 옮기고, 이후에는 고인의 기억을 오래 보관합니다.
+        </p>
+        <div class="hero-keywords">
+          <span>비용 부담 완화</span>
+          <span>가족 중심 장례</span>
+          <span>지속되는 기억</span>
+        </div>
+      </div>
+      <div class="hero-visual" aria-label="유록 온라인 빈소 예시 화면">
+        <img src="./yurok-altar-vector-v9-blank-nameplate.png" alt="영정과 제단이 마련된 온라인 빈소" />
+        <span class="visual-label">헌화할수록 국화가 차곡차곡 쌓이는<br />고인을 위한 하나의 빈소</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>초대받은 조문객의 경험</h2>
+        <p>링크 하나로 입장부터 추념까지</p>
+      </div>
+      <div class="journey">
+        <article class="journey-card">
+          <span class="journey-no">01</span>
+          <h3>초대장</h3>
+          <p>초대 링크를 열면 고인의 빈소와 유족의 인사말을 먼저 만납니다.</p>
+        </article>
+        <article class="journey-card">
+          <span class="journey-no">02</span>
+          <h3>방명록</h3>
+          <p>이름·고인과의 관계·전화번호를 남기고 조의 계좌를 확인합니다.</p>
+        </article>
+        <article class="journey-card">
+          <span class="journey-no">03</span>
+          <h3>헌화</h3>
+          <p>헌화 버튼을 누르면 한 송이 국화가 제단 위에 선명하게 피어납니다.</p>
+        </article>
+        <article class="journey-card">
+          <span class="journey-no">04</span>
+          <h3>추념</h3>
+          <p>한지 공간에 글과 사진을 남기면 고인을 기억하는 장면이 만들어집니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <div class="middle-grid">
+      <section class="experience">
+        <div class="section-title">
+          <h2>유록이 만드는 추모 경험</h2>
+          <p>기능보다 마음이 먼저 보이도록</p>
+        </div>
+        <div class="experience-list">
+          <article class="experience-item">
+            <span class="experience-icon">花</span>
+            <div>
+              <h3>함께 완성하는 제단</h3>
+              <p>조문객이 헌화할 때마다 서로 다른 각도의 국화가 자연스럽게 쌓입니다.</p>
+            </div>
+          </article>
+          <article class="experience-item">
+            <span class="experience-icon">記</span>
+            <div>
+              <h3>한 사람, 하나의 기억</h3>
+              <p>전화번호 하나당 추념 1건과 사진 최대 3장을 남길 수 있습니다.</p>
+            </div>
+          </article>
+          <article class="experience-item">
+            <span class="experience-icon">景</span>
+            <div>
+              <h3>기억을 장면으로</h3>
+              <p>대표 사진을 중심으로 글과 사진을 자동 배치해 추념 공간을 만듭니다.</p>
+            </div>
+          </article>
+          <article class="experience-item">
+            <span class="experience-icon">靜</span>
+            <div>
+              <h3>엄숙하고 절제된 화면</h3>
+              <p>한국식 제단과 한지의 질감으로 가볍지 않은 애도 경험을 유지합니다.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="timeline">
+        <div class="section-title">
+          <h2>장례 이후에도 남도록</h2>
+          <p>서비스 생애주기</p>
+        </div>
+        <div class="timeline-list">
+          <div class="time-row">
+            <strong>장례 기간 · 3일</strong>
+            <p>온라인 빈소와 제단을 공개하고 방명록·헌화·추념 작성을 받습니다.</p>
+          </div>
+          <div class="time-row">
+            <strong>장례 종료</strong>
+            <p>영정과 제단 화면은 닫히고, 고인의 추념 공간만 보관됩니다.</p>
+          </div>
+          <div class="time-row">
+            <strong>종료 후 30일</strong>
+            <p>방명록의 전화번호는 자동 삭제하고 남겨진 기억은 그대로 유지합니다.</p>
+          </div>
+          <div class="time-row">
+            <strong>선택한 보관 기간</strong>
+            <p>추념 공간은 외부에 노출하지 않고 유족을 위해 비공개 보관합니다.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="bottom-grid">
+      <section class="plans">
+        <div class="section-title">
+          <h2>필요한 만큼 선택하는 요금 구조</h2>
+          <p>글쓰기 인원 × 보관 기간</p>
+        </div>
+        <div class="plan-rows">
+          <div class="plan-row">
+            <strong>글쓰기 인원</strong>
+            <div class="plan-options"><span>50명</span><span>200명</span><span>500명</span></div>
+          </div>
+          <div class="plan-row">
+            <strong>비공개 보관</strong>
+            <div class="plan-options"><span>1년</span><span>5년</span><span>10년</span></div>
+          </div>
+        </div>
+        <p class="plan-note">※ 방문 인원이 아닌 방명록·추념 글쓰기 인원을 기준으로 하며, 유족 관리자 권한은 제한 없이 이용합니다.</p>
+      </section>
+
+      <section class="channel">
+        <div class="section-title">
+          <h2>구매와 개설</h2>
+          <p>가족과 장례식장을 연결</p>
+        </div>
+        <div class="channel-row">
+          <strong>유족 직접</strong>
+          <p>검색으로 유록을 찾고 로그인 후 온라인 빈소를 신청합니다.</p>
+        </div>
+        <div class="channel-row">
+          <strong>장례식장</strong>
+          <p>장례지도사가 유족에게 안내하고 필요한 경우 페이지 개설을 대신합니다.</p>
+        </div>
+        <div class="privacy">초대 링크와 유족용 권한 링크를 구분해 조문객 접근과 관리를 안전하게 분리합니다.</div>
+      </section>
+    </div>
+
+    <footer>
+      <p class="closing">빈소가 사라진 뒤에도, 기억은 남습니다.<small>무빈소 장례에 추모의 자리를 더하는 온라인 빈소 · 유록</small></p>
+      <span class="footer-mark">遺錄 · 유록</span>
+    </footer>
+  </main>
+</body>
+</html>
