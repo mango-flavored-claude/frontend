@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { createPortal } from "react-dom";
 import styled from "styled-components";
 
 const TRANSITION_MS = 250; // 팝업이 뜨고 닫힐 때의 애니메이션 시간
 
-// TODO: 서버 연동 전이라 사진/글은 실제로 저장되지 않음. 나중에 실제 등록 API가 생기면
-// 여기서 실제로 업로드 요청을 보내고, 성공했을 때만 onSubmit을 호출하도록 바꿔야 함.
+// TODO: 서버 연동 전이라 사진/글/나만 보기 여부(isPrivate)는 실제로 저장되지 않음.
+// 나중에 실제 등록 API가 생기면 여기서 실제로 업로드 요청을 보내고,
+// 성공했을 때만 onSubmit을 호출하도록 바꿔야 함.
 //
 // 페이지 이동 대신 팝업(모달)으로 뜸: 뒤에는 추억모음 화면이 어둡게 깔리고, 가운데에 카드만 보임.
 export default function AddMemoryCard({
@@ -17,6 +19,7 @@ export default function AddMemoryCard({
   const [isVisible, setIsVisible] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false); // "나만 보기" 체크 여부
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -53,14 +56,16 @@ export default function AddMemoryCard({
   // 사진은 선택 사항이라 안 넣어도 되지만, 글은 꼭 있어야 "남기기"가 활성화됨
   const canSubmit = message.trim().length > 0;
 
-  return (
+  // document.body로 바로 렌더링(Portal)해야, 이 컴포넌트를 감싸는 화면(NextPage의 Wrapper 등)에
+  // transform이 걸려있어도 영향받지 않고 항상 "현재 보이는 화면" 기준으로 정확히 뜸
+  return createPortal(
     <Overlay $isVisible={isVisible} onClick={handleClose}>
       <Card $isVisible={isVisible} onClick={(e) => e.stopPropagation()}>
         <CloseButton onClick={handleClose} aria-label="닫기">
           ×
         </CloseButton>
 
-        <Title>소중한 추억을 남겨주세요</Title>
+        <Title>추념의 마음을 남겨주세요</Title>
 
         <input
           ref={fileInputRef}
@@ -90,13 +95,24 @@ export default function AddMemoryCard({
           onChange={(e) => setMessage(e.target.value)}
         />
 
+        <PrivacyRow>
+          <input
+            id="memory-private"
+            type="checkbox"
+            checked={isPrivate}
+            onChange={(e) => setIsPrivate(e.target.checked)}
+          />
+          <label htmlFor="memory-private">나만 보기</label>
+        </PrivacyRow>
+
         <ButtonGroup>
           <SubmitButton onClick={handleSubmit} disabled={!canSubmit}>
             남기기
           </SubmitButton>
         </ButtonGroup>
       </Card>
-    </Overlay>
+    </Overlay>,
+    document.body
   );
 }
 
@@ -230,6 +246,26 @@ const MessageInput = styled.textarea`
 
   &:focus {
     border-color: #c9a063;
+  }
+`;
+
+const PrivacyRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #a9834f;
+    cursor: pointer;
+  }
+
+  label {
+    font-size: 13px;
+    color: #666666;
+    cursor: pointer;
   }
 `;
 
