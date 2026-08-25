@@ -14,10 +14,10 @@ concurrency:
   group: 'pages'
   cancel-in-progress: true
 
-# 모든 run 명령어를 frontend/yurok 기준에서 실행
+# 레포지토리(frontend) 바로 아래의 yurok 폴더 지정
 defaults:
   run:
-    working-directory: ./frontend/yurok
+    working-directory: yurok
 
 jobs:
   build-and-deploy:
@@ -40,7 +40,7 @@ jobs:
       - name: Pages 아티팩트 업로드
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './frontend/yurok/dist'  # 빌드 결과물 경로 (CRA인 경우 frontend/yurok/build)
+          path: 'yurok/dist'  # 빌드 결과물 경로 (CRA인 경우 yurok/build)
 
       - name: GitHub Pages에 배포
         id: deployment
