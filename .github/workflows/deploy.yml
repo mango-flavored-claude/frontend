@@ -29,13 +29,18 @@ jobs:
       - name: Node.js 설정
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
+          cache-dependency-path: yurok/package-lock.json
 
       - name: 의존성 설치
         run: npm ci
 
       - name: React 프로젝트 빌드
         run: npm run build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
 
       - name: Pages 아티팩트 업로드
         uses: actions/upload-pages-artifact@v3

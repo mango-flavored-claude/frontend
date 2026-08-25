@@ -3,11 +3,10 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { saveVisitor } from "../../utils/visitorStorage";
 import { useInviteToken } from "../../hooks/useInviteToken";
+import { API_BASE_URL as API_BASE } from "../../utils/api";
 
 // 조문객 첫 입장 API: POST /api/memorials/{inviteToken}/visitors
 // 조의금 계좌 조회: GET /api/memorials/{inviteToken}/account
-const API_BASE = import.meta.env.VITE_API_URL;
-
 const BANK_NAMES: Record<string, string> = {
     KB_KOOKMIN: "KB국민은행",
     SHINHAN: "신한은행",

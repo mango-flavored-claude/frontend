@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import backgroundImage from "../../assets/yurok_homepage.png";
 import portraitDemo from "../../assets/potrait_demo.png";
 import { useInviteToken } from "../../hooks/useInviteToken";
+import { API_BASE_URL as API_BASE } from "../../utils/api";
 
 // yurok_homepage.png(1672×941) 안 빈 액자의 실제 위치를 픽셀 분석해서 구한 좌표(%)
 // (액자 안쪽 테두리 기준: 가로 705~962px, 세로 93~403px)
@@ -13,8 +14,6 @@ const TRANSITION_MS = 400; // 등장/사라지는 애니메이션 시간(아래 
 
 // 영정사진 조회 API: GET /api/memorials/{inviteToken}/portrait (S3 presigned URL, 일정 시간 뒤 만료됨)
 // 빈소 메인 조회 API: GET /api/memorials/{inviteToken}
-const API_BASE = import.meta.env.VITE_API_URL;
-
 interface MemorialHome {
     deceasedName: string;
     birthDate: string;

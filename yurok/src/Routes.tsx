@@ -10,6 +10,9 @@ import Request from "./routes/request/Request";
 import ReEnter from "./routes/reEnter/ReEnter";
 import { MemorialPark } from "./routes/memorialPark/MemorialPark";
 import RequireAuth from "./components/RequireAuth";
+
+const basename = import.meta.env.BASE_URL.replace(/\/$/, "") || "/";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -58,7 +61,7 @@ const router = createBrowserRouter([
   },
 ],
 {
-    basename: "/frontend",
+    basename,
   }
 );
 

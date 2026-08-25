@@ -3,13 +3,12 @@ import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { getVisitor } from "../../utils/visitorStorage";
 import { useInviteToken } from "../../hooks/useInviteToken";
+import { API_BASE_URL as API_BASE } from "../../utils/api";
 
 const TRANSITION_MS = 250; // 팝업이 뜨고 닫힐 때의 애니메이션 시간
 const MAX_PHOTOS = 3; // 서버 API 제한(최대 3장)
 
 // 추억 작성 API: POST /api/memorials/{inviteToken}/memories (multipart/form-data)
-const API_BASE = import.meta.env.VITE_API_URL;
-
 // 페이지 이동 대신 팝업(모달)으로 뜸: 뒤에는 추억모음 화면이 어둡게 깔리고, 가운데에 카드만 보임.
 export default function AddMemoryCard({
   onClose,

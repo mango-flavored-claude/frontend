@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as S from './OnlineAltar.styled.ts';
+import { publicAsset } from '../../utils/publicAsset';
 
 interface MemorialData {
   deceasedName?: string;
@@ -17,9 +18,9 @@ interface MemoryItem {
 }
 
 const FLOWER_ASSETS = [
-  './image/chrysanthemum-offering-upright.png',
-  './image/chrysanthemum-offering-left.png',
-  './image/chrysanthemum-offering-right.png',
+  publicAsset('image/chrysanthemum-offering-upright.png'),
+  publicAsset('image/chrysanthemum-offering-left.png'),
+  publicAsset('image/chrysanthemum-offering-right.png'),
 ];
 
 const centerOut = (count: number): number[] => {
@@ -98,7 +99,7 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
-  const flowerTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const flowerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const altarRef = useRef<HTMLElement>(null);
   const memoryRef = useRef<HTMLElement>(null);
 
@@ -164,7 +165,7 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
     };
   };
 
-  const moveToSection = (targetRef: React.RefObject<HTMLElement>) => {
+  const moveToSection = (targetRef: React.RefObject<HTMLElement | null>) => {
     if (isTransitioning || !targetRef.current) return;
     setIsTransitioning(true);
     setShowPageTransition(true);
@@ -330,7 +331,7 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
         </S.Garden>
 
         <S.GardenEnd>
-          <img src="./image/chrysanthemum-offering-front.png" alt="국화" />
+          <img src={publicAsset('image/chrysanthemum-offering-front.png')} alt="국화" />
           <p>
             남겨진 기억만큼
             <br />
