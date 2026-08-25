@@ -1,7 +1,8 @@
 import { useState, type ChangeEvent } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import styled from "styled-components";
 import { saveVisitor } from "../../utils/visitorStorage";
+import { useInviteToken } from "../../hooks/useInviteToken";
 
 // 조문객 재입장 API: POST /api/memorials/{inviteToken}/visitors/reentry
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -11,7 +12,7 @@ export default function ReEnter() {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
-    const { key } = useParams<{ key: string }>();
+    const key = useInviteToken();
 
     const formatPhoneNumber = (value: string) => {
         const digits = value.replace(/\D/g, "").slice(0, 11);

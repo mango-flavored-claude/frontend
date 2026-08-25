@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import styled, { keyframes } from "styled-components";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import backgroundImage from "../../assets/yurok_homepage.png";
 import portraitDemo from "../../assets/potrait_demo.png";
+import { useInviteToken } from "../../hooks/useInviteToken";
 
 // yurok_homepage.png(1672×941) 안 빈 액자의 실제 위치를 픽셀 분석해서 구한 좌표(%)
 // (액자 안쪽 테두리 기준: 가로 705~962px, 세로 93~403px)
@@ -22,7 +23,7 @@ interface MemorialHome {
 
 export default function Altar() {
     const navigate = useNavigate();
-    const { key } = useParams<{ key: string }>();
+    const key = useInviteToken();
     const hasNavigated = useRef(false); // 다음 페이지로 중복 이동하지 않도록 막는 플래그
     const [isVisible, setIsVisible] = useState(false); // 등장 애니메이션 시작 여부
     const [isLeaving, setIsLeaving] = useState(false); // 퇴장 애니메이션 시작 여부

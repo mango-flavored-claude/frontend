@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { createPortal } from "react-dom";
-import { useParams } from "react-router-dom";
 import styled from "styled-components";
 import { getVisitor } from "../../utils/visitorStorage";
+import { useInviteToken } from "../../hooks/useInviteToken";
 
 const TRANSITION_MS = 250; // 팝업이 뜨고 닫힐 때의 애니메이션 시간
 const MAX_PHOTOS = 3; // 서버 API 제한(최대 3장)
@@ -18,7 +18,7 @@ export default function AddMemoryCard({
   onClose: () => void;
   onSubmit: () => void;
 }) {
-  const { key } = useParams<{ key: string }>();
+  const key = useInviteToken();
   const [isVisible, setIsVisible] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);

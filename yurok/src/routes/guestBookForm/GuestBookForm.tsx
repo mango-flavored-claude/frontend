@@ -1,13 +1,32 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { saveVisitor } from "../../utils/visitorStorage";
+import { useInviteToken } from "../../hooks/useInviteToken";
 
 // 조문객 첫 입장 API: POST /api/memorials/{inviteToken}/visitors
+// 조의금 계좌 조회: GET /api/memorials/{inviteToken}/account
 const API_BASE = import.meta.env.VITE_API_URL;
 
+const BANK_NAMES: Record<string, string> = {
+    KB_KOOKMIN: "KB국민은행",
+    SHINHAN: "신한은행",
+    WOORI: "우리은행",
+    HANA: "하나은행",
+    NH: "NH농협은행",
+    IBK: "IBK기업은행",
+    KAKAO_BANK: "카카오뱅크",
+    TOSS_BANK: "토스뱅크",
+};
+
+interface MemorialAccount {
+    bankName: string;
+    accountNumber: string;
+    accountHolder: string;
+}
+
 export default function GuestbookForm() {
-    const { key } = useParams<{ key: string }>();
+    const key = useInviteToken();
 
     const [name, setName] = useState("");
     const [relation, setRelation] = useState("");
@@ -15,12 +34,27 @@ export default function GuestbookForm() {
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [account, setAccount] = useState<MemorialAccount | null>(null);
 
     const navigator = useNavigate();
 
-    const bankName = "국민은행";
-    const accountHolder = "김OO";
-    const accountNumber = "123456-78-901234";
+    useEffect(() => {
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/memorials/${key}/account`);
+                const data = await res.json();
+                if (!cancelled && res.ok && data.success) setAccount(data.result);
+            } catch {
+                // 계좌 조회 실패해도 방명록 작성 자체는 가능해야 하니, 안내 영역만 안 뜨고 넘어감
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [key]);
 
     const formatPhoneNumber = (value: string) => {
         const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -42,8 +76,9 @@ export default function GuestbookForm() {
     };
 
     const handleCopyAccount = async () => {
+        if (!account) return;
         try {
-            // await navigator.clipboard.writeText(accountNumber.replace(/-/g, ""));
+            // await navigator.clipboard.writeText(account.accountNumber.replace(/-/g, ""));
             // setCopied(true);
             // setTimeout(() => setCopied(false), 1500);
         } catch (err) {
@@ -124,26 +159,30 @@ export default function GuestbookForm() {
                     />
                 </FieldGroup>
 
-                <Divider />
+                {account && (
+                    <>
+                        <Divider />
 
-                <AccountSection>
-                    <AccountTitle>조의를 전하고 싶은 분들께</AccountTitle>
-                    <AccountSubtitle>
-                        마음을 전하고 싶으신 분들을 위해 유족의 계좌를 안내드립니다.
-                    </AccountSubtitle>
+                        <AccountSection>
+                            <AccountTitle>조의를 전하고 싶은 분들께</AccountTitle>
+                            <AccountSubtitle>
+                                마음을 전하고 싶으신 분들을 위해 유족의 계좌를 안내드립니다.
+                            </AccountSubtitle>
 
-                    <AccountCard>
-                        <AccountInfo>
-                            <AccountBank>
-                                {bankName} {accountHolder}
-                            </AccountBank>
-                            <AccountNumber>{accountNumber}</AccountNumber>
-                        </AccountInfo>
-                        <CopyButton onClick={handleCopyAccount}>
-                            {copied ? "복사됨" : "복사"}
-                        </CopyButton>
-                    </AccountCard>
-                </AccountSection>
+                            <AccountCard>
+                                <AccountInfo>
+                                    <AccountBank>
+                                        {BANK_NAMES[account.bankName] ?? account.bankName} {account.accountHolder}
+                                    </AccountBank>
+                                    <AccountNumber>{account.accountNumber}</AccountNumber>
+                                </AccountInfo>
+                                <CopyButton onClick={handleCopyAccount}>
+                                    {copied ? "복사됨" : "복사"}
+                                </CopyButton>
+                            </AccountCard>
+                        </AccountSection>
+                    </>
+                )}
 
                 {error && <ErrorText>{error}</ErrorText>}
 

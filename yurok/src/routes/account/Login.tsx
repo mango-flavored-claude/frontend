@@ -1,30 +1,61 @@
 import React, { useState, FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import Toast, { type ToastVariant } from '../../components/Toast';
+import { useUser } from '../../store/UserContext';
 
+// 유족 로그인 API: POST /api/users/login
+const API_BASE = import.meta.env.VITE_API_URL;
+
+const AFTER_SUCCESS_DELAY_MS = 1000; // 토스트를 잠깐 보여준 뒤 신청 화면으로 이동
 
 // ==========================================
 // 2. React Component implementation
 // ==========================================
 interface LoginProps {
-  onHomeClick?: () => void;
-  onSignUpClick?: () => void;
-  onKakaoLoginClick?: () => void;
   showNotice?: boolean;
 }
 
 export default function Login({
-  onHomeClick,
-  onSignUpClick,
-  onKakaoLoginClick,
   showNotice = false,
 }: LoginProps) {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null);
+  const navigate = useNavigate();
+  const { setUser } = useUser();
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // 로그인 처리 로직 수행
-    console.log('Login attempt:', { email, password });
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // data.result: { userId, name } → 이후 화면(빈소 신청 등)에서 ownerId로 씀
+        setUser(data.result);
+        setToast({ message: data.message || '로그인에 성공했습니다.', variant: 'success' });
+        // 로그인 성공 → 온라인 빈소 신청 화면으로 이동
+        setTimeout(() => navigate('/request'), AFTER_SUCCESS_DELAY_MS);
+      } else {
+        // Whitelabel 에러(스프링 기본 에러 응답)면 message가 없을 수 있어 기본 문구로 대체
+        setToast({
+          message: data.message || '이메일 또는 비밀번호를 확인해주세요.',
+          variant: 'error',
+        });
+      }
+    } catch {
+      setToast({ message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.', variant: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -72,15 +103,25 @@ export default function Login({
                 />
               </Field>
 
-              <AuthSubmit type="submit">로그인</AuthSubmit>
+              <AuthSubmit type="submit" disabled={isSubmitting}>
+                {isSubmitting ? '로그인 중...' : '로그인'}
+              </AuthSubmit>
             </Form>
 
-            <JoinButton type="button" onClick={onKakaoLoginClick}>
+            <JoinButton to="/signup">
               회원가입
             </JoinButton>
           </AuthCard>
         </FlowBody>
       </FlowPage>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => setToast(null)}
+        />
+      )}
     </>
   );
 }
@@ -194,11 +235,16 @@ const AuthSubmit = styled.button`
   }
 `;
 
-const JoinButton = styled.button`
+const JoinButton = styled(Link)`
+  display: block;
   width: 100%;
   height: 44px;
+  line-height: 44px;
+  text-align: center;
   border: 1px solid #c5baad;
   background: #f8f4ed;
   color: #50483f;
   margin-top: 12px;
+  text-decoration: none;
+  box-sizing: border-box;
 `;

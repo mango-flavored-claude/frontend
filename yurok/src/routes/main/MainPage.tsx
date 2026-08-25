@@ -1,6 +1,7 @@
 import React, { useRef, useState, WheelEvent } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
+import { useUser } from '../../store/UserContext';
 
 // ==========================================
 // 2. 각 페이지(섹션) 컴포넌트
@@ -28,7 +29,7 @@ const FirstPage: React.FC<NavigablePageProps> = ({ onNavigate }) => {
             장례의 시간은 함께하고, 남은 기억은 오래 간직합니다.
           </HeroDescription>
           <HeroActions>
-            <PrimaryButton>온라인 빈소 신청하기</PrimaryButton>
+            <PrimaryButton to={'/request'}>온라인 빈소 신청하기</PrimaryButton>
             <SecondaryButton onClick={() => onNavigate?.(1)}>
               서비스 알아보기
             </SecondaryButton>
@@ -155,6 +156,8 @@ const ThirdPage: React.FC = () => {
 };
 
 const Header = () => {
+  const { user, setUser } = useUser();
+
   return (
     <SiteHeader>
       <Brand>
@@ -165,7 +168,16 @@ const Header = () => {
         </BrandText>
       </Brand>
       <Nav>
-        <NavButton to={'/login'}>로그인</NavButton>
+        {user ? (
+          <>
+            <UserName>{user.name}님</UserName>
+            <LogoutButton type="button" onClick={() => setUser(null)}>
+              로그아웃
+            </LogoutButton>
+          </>
+        ) : (
+          <NavButton to={'/login'}>로그인</NavButton>
+        )}
         <ApplyButton to={'/request'}>온라인 빈소 신청하기</ApplyButton>
       </Nav>
     </SiteHeader>
@@ -352,6 +364,46 @@ const NavButton = styled(Link)`
   }
 `;
 
+const UserName = styled.span`
+  height: 40px;
+  padding-inline: 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #463226;
+
+  @media (max-width: 1200px) {
+    height: 36px;
+    padding-inline: 14px;
+    font-size: 10px;
+  }
+`;
+
+const LogoutButton = styled.button`
+  height: 40px;
+  padding-inline: 14px;
+  border: 1px solid #c5baad;
+  background: transparent;
+  color: #756c62;
+  font-size: 10.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: 0.2s ease;
+
+  &:hover {
+    background: #f4f2ec;
+    color: #1a1a1a;
+  }
+
+  @media (max-width: 1200px) {
+    height: 36px;
+    padding-inline: 10px;
+    font-size: 9.5px;
+  }
+`;
+
 const ApplyButton = styled(NavButton)`
   color: white;
   border-color: #463226;
@@ -457,8 +509,12 @@ const buttonBase = css`
   }
 `;
 
-const PrimaryButton = styled.button`
+const PrimaryButton = styled(Link)`
   ${buttonBase}
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   border: 1px solid #463226;
   color: white;
   background: #463226;

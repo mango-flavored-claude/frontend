@@ -1,5 +1,33 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled, { createGlobalStyle } from 'styled-components';
+import Toast, { type ToastVariant } from '../../components/Toast';
+import { useUser } from '../../store/UserContext';
+import { saveMemorial } from '../../utils/memorialStorage';
+
+// 온라인 빈소 생성 API: POST /api/memorials (multipart/form-data)
+const API_BASE = import.meta.env.VITE_API_URL;
+
+const BANK_OPTIONS = [
+  { value: 'KB_KOOKMIN', label: 'KB국민은행' },
+  { value: 'SHINHAN', label: '신한은행' },
+  { value: 'WOORI', label: '우리은행' },
+  { value: 'HANA', label: '하나은행' },
+  { value: 'NH', label: 'NH농협은행' },
+  { value: 'IBK', label: 'IBK기업은행' },
+  { value: 'KAKAO_BANK', label: '카카오뱅크' },
+  { value: 'TOSS_BANK', label: '토스뱅크' },
+];
+
+// HTML datetime-local 값("yyyy-MM-ddTHH:mm")에 초를 붙여 서버가 요구하는
+// "yyyy-MM-dd'T'HH:mm:ss" 형식으로 맞춤
+const toApiDateTime = (value: string) => (value ? `${value}:00` : value);
+
+interface MemorialCreateResult {
+  memorialId: number;
+  inviteToken: string;
+  inviteUrl: string;
+}
 
 // ==========================================
 // 2. React Component implementation
@@ -16,9 +44,13 @@ export interface RequestFormData {
   deathDate: string;
   relation: string;
   photo: File | null;
-  startDate: string;
-  endDate: string;
-  bankAccount: string;
+  funeralStartAt: string;
+  funeralEndAt: string;
+  encoffinmentAt: string;
+  departureAt: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
   greeting: string;
   writers: string;
   retention: string;
@@ -29,17 +61,26 @@ export default function Request({
   onSubmitComplete,
   memberName = 'FAMILY MEMBER',
 }: RequestProps) {
+  const { user } = useUser();
+  const navigate = useNavigate();
   const [step, setStep] = useState<number>(1);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null);
+  const [createResult, setCreateResult] = useState<MemorialCreateResult | null>(null);
   const [formData, setFormData] = useState<RequestFormData>({
     deceasedName: '',
     birthDate: '',
     deathDate: '',
     relation: '배우자',
     photo: null,
-    startDate: '',
-    endDate: '',
-    bankAccount: '',
+    funeralStartAt: '',
+    funeralEndAt: '',
+    encoffinmentAt: '',
+    departureAt: '',
+    bankName: 'KB_KOOKMIN',
+    accountNumber: '',
+    accountHolder: '',
     greeting: '직접 모시지 못하는 마음을 담아 온라인 추모 공간을 마련했습니다.',
     writers: '50명',
     retention: '1년',
@@ -66,13 +107,67 @@ export default function Request({
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
-    if (onSubmitComplete) {
-      onSubmitComplete(formData);
-    } else {
-      console.log('Application Submitted:', formData);
+
+    if (!user) {
+      setToast({ message: '로그인이 필요합니다. 다시 로그인해주세요.', variant: 'error' });
+      return;
+    }
+    if (!formData.photo) {
+      setToast({ message: '영정사진을 첨부해주세요.', variant: 'error' });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const requestPayload = {
+        ownerId: user.userId,
+        deceasedName: formData.deceasedName,
+        birthDate: formData.birthDate,
+        deathDate: formData.deathDate,
+        funeralStartAt: toApiDateTime(formData.funeralStartAt),
+        funeralEndAt: toApiDateTime(formData.funeralEndAt),
+        encoffinmentAt: toApiDateTime(formData.encoffinmentAt),
+        departureAt: toApiDateTime(formData.departureAt),
+        bankName: formData.bankName,
+        accountNumber: formData.accountNumber,
+        accountHolder: formData.accountHolder,
+        memoryLimit: parseInt(formData.writers, 10),
+        publicYears: parseInt(formData.retention, 10),
+      };
+
+      const body = new FormData();
+      body.append(
+        'request',
+        new Blob([JSON.stringify(requestPayload)], { type: 'application/json' })
+      );
+      body.append('portrait', formData.photo);
+
+      const res = await fetch(`${API_BASE}/api/memorials`, {
+        method: 'POST',
+        body, // multipart라 Content-Type은 직접 안 정함(브라우저가 자동으로 boundary 포함해서 설정)
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setToast({
+          message: data.message || '빈소 생성에 실패했습니다. 다시 시도해주세요.',
+          variant: 'error',
+        });
+        return;
+      }
+
+      setCreateResult(data.result);
+      // memorialId/inviteToken은 다른 화면·API(빈소 조회, 방명록 등)에서도 key로 써야 하니 저장해둠
+      saveMemorial(data.result);
+      setIsSubmitted(true);
+      onSubmitComplete?.(formData);
+    } catch {
+      setToast({ message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.', variant: 'error' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -188,34 +283,81 @@ export default function Request({
                     <FormGroup>
                       <TwoFields>
                         <Field>
-                          <span>시작 일시</span>
+                          <span>빈소 시작 일시</span>
                           <input
                             type="datetime-local"
-                            name="startDate"
-                            value={formData.startDate}
+                            name="funeralStartAt"
+                            value={formData.funeralStartAt}
                             onChange={handleInputChange}
                           />
                         </Field>
                         <Field>
-                          <span>종료 일시</span>
+                          <span>빈소 종료 일시</span>
                           <input
                             type="datetime-local"
-                            name="endDate"
-                            value={formData.endDate}
+                            name="funeralEndAt"
+                            value={formData.funeralEndAt}
+                            onChange={handleInputChange}
+                          />
+                        </Field>
+                      </TwoFields>
+
+                      <TwoFields>
+                        <Field>
+                          <span>입관 일시</span>
+                          <input
+                            type="datetime-local"
+                            name="encoffinmentAt"
+                            value={formData.encoffinmentAt}
+                            onChange={handleInputChange}
+                          />
+                        </Field>
+                        <Field>
+                          <span>발인 일시</span>
+                          <input
+                            type="datetime-local"
+                            name="departureAt"
+                            value={formData.departureAt}
                             onChange={handleInputChange}
                           />
                         </Field>
                       </TwoFields>
 
                       <Field>
-                        <span>마음 전하실 계좌</span>
-                        <input
-                          name="bankAccount"
-                          placeholder="은행명 / 계좌번호 / 예금주"
-                          value={formData.bankAccount}
+                        <span>마음 전하실 계좌 · 은행</span>
+                        <select
+                          name="bankName"
+                          value={formData.bankName}
                           onChange={handleInputChange}
-                        />
+                        >
+                          {BANK_OPTIONS.map((bank) => (
+                            <option key={bank.value} value={bank.value}>
+                              {bank.label}
+                            </option>
+                          ))}
+                        </select>
                       </Field>
+
+                      <TwoFields>
+                        <Field>
+                          <span>계좌번호</span>
+                          <input
+                            name="accountNumber"
+                            placeholder="숫자만 입력"
+                            value={formData.accountNumber}
+                            onChange={handleInputChange}
+                          />
+                        </Field>
+                        <Field>
+                          <span>예금주</span>
+                          <input
+                            name="accountHolder"
+                            placeholder="예: 김철수"
+                            value={formData.accountHolder}
+                            onChange={handleInputChange}
+                          />
+                        </Field>
+                      </TwoFields>
 
                       <Field>
                         <span>초대장 인사말</span>
@@ -253,8 +395,8 @@ export default function Request({
                     <ChoiceGrid>
                       {[
                         { code: 'SMALL', count: '50명' },
-                        { code: 'STANDARD', count: '200명' },
-                        { code: 'LARGE', count: '500명' },
+                        { code: 'STANDARD', count: '100명' },
+                        { code: 'LARGE', count: '250명' },
                       ].map((item) => (
                         <ChoiceLabel
                           key={item.count}
@@ -305,8 +447,8 @@ export default function Request({
                       <PrevButton type="button" onClick={handlePrev}>
                         이전
                       </PrevButton>
-                      <NextButton type="button" onClick={handleSubmit}>
-                        신청 내용 확인
+                      <NextButton type="button" onClick={handleSubmit} disabled={isSubmitting}>
+                        {isSubmitting ? '신청 처리 중...' : '신청'}
                       </NextButton>
                     </FormActions>
                   </ApplicationPane>
@@ -324,12 +466,12 @@ export default function Request({
               <CompleteMark>✓</CompleteMark>
               <Eyebrow>APPLICATION READY</Eyebrow>
               <CompleteTitle>
-                온라인 빈소 신청 내용을
+                온라인 빈소가
                 <br />
-                확인했습니다.
+                생성되었습니다.
               </CompleteTitle>
               <CompleteDescription>
-                아래 내용으로 신청을 진행합니다. 이 화면은 결제 전 프로토타입입니다.
+                아래 초대 링크를 조문객에게 전달해주세요. 결제 관련 화면은 프로토타입입니다.
               </CompleteDescription>
 
               <SummaryTable>
@@ -345,18 +487,32 @@ export default function Request({
                   <span>공개 보관기간</span>
                   <strong>{formData.retention}</strong>
                 </div>
+                {createResult && (
+                  <div>
+                    <span>초대 링크</span>
+                    <strong>{createResult.inviteUrl}</strong>
+                  </div>
+                )}
                 <div>
                   <span>결제 금액</span>
                   <strong>추후 확정</strong>
                 </div>
               </SummaryTable>
 
-              <PrimaryButton type="button" onClick={onHomeClick}>
+              <PrimaryButton type="button" onClick={() => (onHomeClick ? onHomeClick() : navigate('/'))}>
                 홈으로 돌아가기
               </PrimaryButton>
             </CompleteCard>
           </FlowBody>
         </FlowPage>
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => setToast(null)}
+        />
       )}
     </>
   );

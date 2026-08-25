@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import AddMemoryCard from "../addMemoryCard/AddMemoryCard";
+import { useInviteToken } from "../../hooks/useInviteToken";
 
 const WRAPPER_TRANSITION_MS = 400; // Altar에서 사라지는 시간과 맞춰서 자연스럽게 이어지도록 함
 const SCROLL_HOLD_MS = 1000; // 화면 전환 직후, 이 시간 동안은 맨 위 상태를 유지하고 스크롤을 막음
@@ -63,7 +64,7 @@ export default function NextPage() {
   } | null>(null); // 클릭해서 크게 본 사진(+글)
   const photos = useMemo(generatePhotoLayout, []);
   const navigate = useNavigate();
-  const { key } = useParams<{ key: string }>();
+  const key = useInviteToken();
   const hasGoneBack = useRef(false); // 뒤로가기 중복 실행 방지
 
   useEffect(() => {
