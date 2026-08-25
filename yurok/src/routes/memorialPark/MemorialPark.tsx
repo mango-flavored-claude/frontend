@@ -8,6 +8,7 @@ interface MemorialHome {
   birthDate: string;
   deathDate: string;
   offeringCount?: number;
+  visitorCount?: number;
 }
 
 interface MemoryItem {
@@ -31,14 +32,14 @@ const centerOut = (count: number): number[] => {
   );
 };
 
+// 줄 간격을 좁히고 4번째 줄 추가 (총 54개 위치 생성)
 const buildFlowerPositions = (): Array<[number, number, number, number]> => {
+  const MAX_FLOWERS = 54;
   const rows = [
-    { bottom: 13.5, count: 17, min: 11, max: 80, scale: 0.8 },
-    { bottom: 17.5, count: 15, min: 14, max: 78, scale: 0.77 },
-    { bottom: 21.5, count: 13, min: 18, max: 75, scale: 0.73 },
-    { bottom: 25.5, count: 11, min: 23, max: 71, scale: 0.69 },
-    { bottom: 29.5, count: 9, min: 28, max: 67, scale: 0.65 },
-    { bottom: 33.5, count: 8, min: 33, max: 63, scale: 0.61 },
+    { bottom: 12, count: 15, min: 12, max: 80, scale: 0.8 },   // 1번째 줄 (맨 앞)
+    { bottom: 16.5, count: 14, min: 15, max: 77, scale: 0.74 }, // 2번째 줄
+    { bottom: 21, count: 13, min: 17, max: 75, scale: 0.68 },   // 3번째 줄
+    { bottom: 25.5, count: 12, min: 19, max: 73, scale: 0.62 }, // 4번째 줄 (맨 뒤 추가)
   ];
   const result: Array<[number, number, number, number]> = [];
 
@@ -48,14 +49,16 @@ const buildFlowerPositions = (): Array<[number, number, number, number]> => {
       (_, i) => row.min + (row.max - row.min) * (i / (row.count - 1))
     );
     centerOut(row.count).forEach((slotIndex, orderIndex) => {
-      const stagger = (rowIndex % 2 ? 1 : -1) * ((orderIndex % 3) - 1) * 0.45;
+      if (result.length >= MAX_FLOWERS) return;
+
+      const stagger = (rowIndex % 2 ? 1 : -1) * ((orderIndex % 3) - 1) * 0.4;
       const rotation = ((slotIndex % 5) - 2) * 0.75;
       const scale = row.scale + ((slotIndex % 4) - 1.5) * 0.012;
       result.push([slots[slotIndex], row.bottom + stagger, rotation, scale]);
     });
   });
 
-  return result;
+  return result.slice(0, MAX_FLOWERS);
 };
 
 const POSITIONS = buildFlowerPositions();
@@ -88,12 +91,11 @@ export default function MemorialPark() {
   // 추념글 작성 폼 상태
   const [memoryText, setMemoryText] = useState('');
   const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number>(0); // 0-based indexing (0 ~ 2)
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number>(0);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const flowerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const altarRef = useRef<HTMLElement>(null);
   const memoryRef = useRef<HTMLElement>(null);
 
@@ -139,7 +141,8 @@ export default function MemorialPark() {
   }, [key, API_BASE]);
 
   const createFlowerData = (index: number, isNew: boolean) => {
-    const [left, bottom, rotation, scale] = POSITIONS[index % POSITIONS.length];
+    const posIndex = index % POSITIONS.length;
+    const [left, bottom, rotation, scale] = POSITIONS[posIndex];
     const src = FLOWER_ASSETS[Math.floor(Math.random() * FLOWER_ASSETS.length)];
 
     const finalRotation = rotation + (Math.random() * 3 - 1.5);
@@ -158,34 +161,29 @@ export default function MemorialPark() {
   };
 
   const renderFlowers = () => {
-    if (flowerTimerRef.current) clearTimeout(flowerTimerRef.current);
 
-    const requestedCount = Number(memorial?.offeringCount);
-    const totalFlowers = Math.max(
-      1,
-      Math.min(
-        POSITIONS.length,
-        Number.isFinite(requestedCount) && requestedCount > 0 ? Math.floor(requestedCount) : 36
-      )
-    );
-
-    const initialList = [];
-    for (let i = 0; i < totalFlowers - 1; i++) {
-      initialList.push(createFlowerData(i, false));
+    const rawCount = Number(memorial?.visitorCount);
+    if (!Number.isFinite(rawCount) || rawCount <= 0) {
+      setFlowers([]);
+      return;
     }
-    setFlowers(initialList);
 
-    flowerTimerRef.current = setTimeout(() => {
-      setFlowers((prev) => [...prev, createFlowerData(totalFlowers - 1, true)]);
-    }, 9200);
+    // 꽃의 개수는 최대 54개로 제한
+    const totalFlowers = Math.min(POSITIONS.length, Math.floor(rawCount));
+
+    const flowerList = [];
+    // 1 ~ (N-1)번째 꽃: 애니메이션 없음 (isNew = false)
+    for (let i = 0; i < totalFlowers - 1; i++) {
+      flowerList.push(createFlowerData(i, false));
+    }
+    // N번째(마지막) 꽃: 애니메이션 실행 (isNew = true)
+    flowerList.push(createFlowerData(totalFlowers - 1, true));
+
+    setFlowers(flowerList);
   };
 
   useEffect(() => {
     renderFlowers();
-
-    return () => {
-      if (flowerTimerRef.current) clearTimeout(flowerTimerRef.current);
-    };
   }, [memorial]);
 
   const moveToSection = (targetRef: React.RefObject<HTMLElement | null>) => {
@@ -231,7 +229,7 @@ export default function MemorialPark() {
 
     setSelectedFiles(files);
     setPreviewUrls(newUrls);
-    setSelectedPhotoIndex(0); // 파일이 새로 등록되면 기본 1번 사진(인덱스 0) 선택
+    setSelectedPhotoIndex(0);
   };
 
   const handleSubmitMemory = async (e: React.FormEvent) => {
@@ -243,15 +241,13 @@ export default function MemorialPark() {
 
       const formData = new FormData();
 
-      // 사진 유무 및 선택된 사진 인덱스 처리 (1-based API 스펙 대응)
       let photoIndexValue: number | null = null;
       if (selectedFiles.length > 0) {
         photoIndexValue = (selectedPhotoIndex ?? 0) + 1;
       }
 
-      // 1. JSON Request 객체 세팅
       const requestDto = {
-        visitorId: 1, // 필요 시 동적 ID 값 전달
+        visitorId: 1,
         content: memoryText,
         visibility,
         selectedPhotoIndex: photoIndexValue,
@@ -262,7 +258,6 @@ export default function MemorialPark() {
         new Blob([JSON.stringify(requestDto)], { type: 'application/json' })
       );
 
-      // 2. Photos 파일 객체들 추가
       selectedFiles.forEach((file) => {
         formData.append('photos', file);
       });
@@ -273,7 +268,6 @@ export default function MemorialPark() {
       });
 
       if (res.ok) {
-        // 성공 시 폼 초기화 및 모달 닫기
         setMemoryText('');
         setSelectedFiles([]);
         setPreviewUrls([]);
