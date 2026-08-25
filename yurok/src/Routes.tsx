@@ -44,6 +44,10 @@ const router = createBrowserRouter([
     path: "/request",
     element: <Request />
   },
-]);
+],
+{
+    basename: "/frontend/yurok",
+  }
+);
 
 export default router;
