@@ -37,9 +37,9 @@ export default function GuestbookForm() {
 
     const handleCopyAccount = async () => {
         try {
-            await navigator.clipboard.writeText(accountNumber.replace(/-/g, ""));
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
+            // await navigator.clipboard.writeText(accountNumber.replace(/-/g, ""));
+            // setCopied(true);
+            // setTimeout(() => setCopied(false), 1500);
         } catch (err) {
             console.error("복사 실패", err);
         }
