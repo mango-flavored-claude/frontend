@@ -140,7 +140,7 @@ export default function GuestbookForm() {
                     <Label>고인과의 관계</Label>
                     <Input
                         type="text"
-                        placeholder="홍길동"
+                        placeholder="친구"
                         value={relation}
                         onChange={(e) => setRelation(e.target.value)}
                     />

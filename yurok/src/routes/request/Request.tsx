@@ -1,5 +1,5 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styled, { createGlobalStyle } from 'styled-components';
 import Toast, { type ToastVariant } from '../../components/Toast';
 import { useUser } from '../../store/UserContext';
@@ -503,7 +503,9 @@ export default function Request({
                 {createResult && (
                   <div>
                     <span>초대 링크</span>
-                    <strong>{createResult.inviteUrl}</strong>
+                    <strong><Link to={`${createResult.inviteUrl}`}>링크가기</Link> <button onClick={async ()=>{
+                      await navigator.clipboard.writeText(createResult.inviteUrl);
+                    }}>링크복사</button></strong>
                   </div>
                 )}
                 <div>
@@ -912,6 +914,11 @@ const SummaryTable = styled.div`
 
     &:last-child {
       border-bottom: 0;
+    }
+
+    a {
+      display: block;
+      width: 300px;
     }
   }
 
