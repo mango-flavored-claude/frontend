@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as S from './OnlineAltar.styled.ts';
 import { publicAsset } from '../../utils/publicAsset';
+import { useInviteToken } from '../../hooks/useInviteToken.ts';
 
-interface MemorialData {
-  deceasedName?: string;
-  birthDate?: string;
-  deathDate?: string;
+interface MemorialHome {
+  deceasedName: string;
+  birthDate: string;
+  deathDate: string;
   offeringCount?: number;
 }
 
@@ -59,9 +60,10 @@ const buildFlowerPositions = (): Array<[number, number, number, number]> => {
 
 const POSITIONS = buildFlowerPositions();
 
-export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initialData }) => {
-  const [deceasedName, setDeceasedName] = useState('김유록');
-  const [lifeDates, setLifeDates] = useState('1956. 04. 18 — 2026. 08. 24');
+export default function MemorialPark() {
+  const key = useInviteToken();
+  const API_BASE = import.meta.env.VITE_API_URL;
+
   const [flowers, setFlowers] = useState<
     Array<{
       id: number;
@@ -75,58 +77,90 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
     }>
   >([]);
 
-  const [memories, setMemories] = useState<MemoryItem[]>([
-    {
-      id: 1,
-      text: '봄이면 함께 걷던 길과 환하게 웃으시던 모습을 오래 기억하겠습니다.',
-      author: '김하늘',
-      relation: '친구',
-    },
-    {
-      id: 2,
-      text: '언제나 먼저 건네주시던 다정한 인사를 잊지 않겠습니다.',
-      author: '이준호',
-      relation: '직장 동료',
-    },
-  ]);
+  const [portraitUrl, setPortraitUrl] = useState('');
+  const [memorial, setMemorial] = useState<MemorialHome | null>(null);
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<MemoryItem | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showPageTransition, setShowPageTransition] = useState(false);
 
+  // 추념글 작성 폼 상태
   const [memoryText, setMemoryText] = useState('');
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number>(0); // 0-based indexing (0 ~ 2)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const flowerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const altarRef = useRef<HTMLElement>(null);
   const memoryRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if ('scrollRestoration' in history) {
-      history.scrollRestoration = 'manual';
-    }
+    let cancelled = false;
 
-    const queryParams = new URLSearchParams(window.location.search);
-    const rawName = initialData?.deceasedName || queryParams.get('name') || '김유록';
-    setDeceasedName(rawName.replace(/^故\s*/, ''));
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/memorials/${key}/portrait`);
+        const data = await res.json();
 
-    const birth = initialData?.birthDate || queryParams.get('birth') || '1956. 04. 18';
-    const death = initialData?.deathDate || queryParams.get('death') || '2026. 08. 24';
-    setLifeDates(`${birth} — ${death}`);
-
-    renderFlowers();
+        if (!cancelled && res.ok && data.success && data.result?.imageUrl) {
+          setPortraitUrl(data.result.imageUrl);
+        }
+      } catch {
+        // 백엔드 통신 실패 시 예외 처리
+      }
+    })();
 
     return () => {
-      if (flowerTimerRef.current) clearTimeout(flowerTimerRef.current);
+      cancelled = true;
     };
-  }, [initialData]);
+  }, [key, API_BASE]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/memorials/${key}`);
+        const data = await res.json();
+        if (!cancelled && res.ok && data.success) {
+          setMemorial(data.result);
+        }
+      } catch {
+        // 백엔드 통신 실패 시 예외 처리
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [key, API_BASE]);
+
+  const createFlowerData = (index: number, isNew: boolean) => {
+    const [left, bottom, rotation, scale] = POSITIONS[index % POSITIONS.length];
+    const src = FLOWER_ASSETS[Math.floor(Math.random() * FLOWER_ASSETS.length)];
+
+    const finalRotation = rotation + (Math.random() * 3 - 1.5);
+    const finalScale = scale + (Math.random() * 0.035 - 0.0175);
+
+    return {
+      id: index,
+      src,
+      left,
+      bottom,
+      zIndex: 100 - Math.round(bottom * 2),
+      rotation: finalRotation,
+      scale: finalScale,
+      isNew,
+    };
+  };
 
   const renderFlowers = () => {
     if (flowerTimerRef.current) clearTimeout(flowerTimerRef.current);
 
-    const requestedCount = Number(initialData?.offeringCount);
+    const requestedCount = Number(memorial?.offeringCount);
     const totalFlowers = Math.max(
       1,
       Math.min(
@@ -146,24 +180,13 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
     }, 9200);
   };
 
-  const createFlowerData = (index: number, isNew: boolean) => {
-    const [left, bottom, rotation, scale] = POSITIONS[index % POSITIONS.length];
-    const src = FLOWER_ASSETS[Math.floor(Math.random() * FLOWER_ASSETS.length)];
-    
-    const finalRotation = rotation + (Math.random() * 3 - 1.5);
-    const finalScale = scale + (Math.random() * 0.035 - 0.0175);
+  useEffect(() => {
+    renderFlowers();
 
-    return {
-      id: index,
-      src,
-      left,
-      bottom,
-      zIndex: 100 - Math.round(bottom * 2),
-      rotation: finalRotation,
-      scale: finalScale,
-      isNew,
+    return () => {
+      if (flowerTimerRef.current) clearTimeout(flowerTimerRef.current);
     };
-  };
+  }, [memorial]);
 
   const moveToSection = (targetRef: React.RefObject<HTMLElement | null>) => {
     if (isTransitioning || !targetRef.current) return;
@@ -199,31 +222,78 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
+    if (!e.target.files || e.target.files.length === 0) return;
+
     previewUrls.forEach((url) => URL.revokeObjectURL(url));
 
     const files = Array.from(e.target.files).slice(0, 3);
     const newUrls = files.map((file) => URL.createObjectURL(file));
 
+    setSelectedFiles(files);
     setPreviewUrls(newUrls);
-    setSelectedPhotoIndex(0);
+    setSelectedPhotoIndex(0); // 파일이 새로 등록되면 기본 1번 사진(인덱스 0) 선택
   };
 
-  const handleSubmitMemory = (e: React.FormEvent) => {
+  const handleSubmitMemory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!memoryText.trim()) return;
+    if (!memoryText.trim() || isSubmitting) return;
 
-    const newMemory: MemoryItem = {
-      id: memories.length + 1,
-      text: memoryText.trim(),
-      author: '테스트 조문객',
-      relation: '친구',
-    };
+    try {
+      setIsSubmitting(true);
 
-    setMemories((prev) => [...prev, newMemory]);
-    setIsComposerOpen(false);
-    setMemoryText('');
+      const formData = new FormData();
+
+      // 사진 유무 및 선택된 사진 인덱스 처리 (1-based API 스펙 대응)
+      let photoIndexValue: number | null = null;
+      if (selectedFiles.length > 0) {
+        photoIndexValue = (selectedPhotoIndex ?? 0) + 1;
+      }
+
+      // 1. JSON Request 객체 세팅
+      const requestDto = {
+        visitorId: 1, // 필요 시 동적 ID 값 전달
+        content: memoryText,
+        visibility,
+        selectedPhotoIndex: photoIndexValue,
+      };
+
+      formData.append(
+        'request',
+        new Blob([JSON.stringify(requestDto)], { type: 'application/json' })
+      );
+
+      // 2. Photos 파일 객체들 추가
+      selectedFiles.forEach((file) => {
+        formData.append('photos', file);
+      });
+
+      const res = await fetch(`${API_BASE}/api/memorials/${key}/memories`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        // 성공 시 폼 초기화 및 모달 닫기
+        setMemoryText('');
+        setSelectedFiles([]);
+        setPreviewUrls([]);
+        setSelectedPhotoIndex(0);
+        setIsComposerOpen(false);
+      } else {
+        alert('추념글 등록에 실패했습니다.');
+      }
+    } catch {
+      alert('서버 통신 중 오류가 발생했습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const deceasedName = memorial?.deceasedName || '';
+  const lifeDates =
+    memorial?.birthDate && memorial?.deathDate
+      ? `${memorial.birthDate} — ${memorial.deathDate}`
+      : '';
 
   return (
     <S.Container $isPageTransitioning={isTransitioning} onWheel={handleWheel}>
@@ -234,6 +304,13 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
               <strong>故 {deceasedName}님의 온라인 빈소</strong>
               <S.LifeDates>{lifeDates}</S.LifeDates>
             </S.RoomTitle>
+
+            {portraitUrl && (
+              <S.PortraitFrame>
+                <S.PortraitImage src={portraitUrl} alt={`故 ${deceasedName}님 영정사진`} />
+              </S.PortraitFrame>
+            )}
+
             <S.FlowerLayer>
               {flowers.map((f) => (
                 <S.OfferingFlower
@@ -291,7 +368,6 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
           </S.MemoryTitleWrap>
           <aside>
             <S.MemorySummary>
-              <b>{memories.length}개의 기억</b>
               <p>
                 조문객들이 남긴 마음이
                 <br />한 장씩 이곳에 이어집니다.
@@ -301,34 +377,7 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
           </aside>
         </S.MemoryHeading>
 
-        <S.Garden>
-          {memories.map((item) => (
-            <S.MemoryCard key={item.id} onClick={() => setSelectedDetail(item)}>
-              <S.MemoryPlaceholder>
-                <span className="memory-index">
-                  기억 {String(item.id).padStart(2, '0')}
-                </span>
-                <i className="placeholder-symbol" />
-                <p>
-                  기억으로 만든 사진이
-                  <br />
-                  이곳에 기록됩니다.
-                </p>
-              </S.MemoryPlaceholder>
-              <S.MemoryCopy>
-                <S.MemoryAuthor>
-                  <small>작성자</small>
-                  <strong>
-                    {item.author} <em>{item.relation}</em>
-                  </strong>
-                </S.MemoryAuthor>
-                <S.MemoryOpen>
-                  추념문 보기 <i>→</i>
-                </S.MemoryOpen>
-              </S.MemoryCopy>
-            </S.MemoryCard>
-          ))}
-        </S.Garden>
+        <S.Garden></S.Garden>
 
         <S.GardenEnd>
           <img src={publicAsset('image/chrysanthemum-offering-front.png')} alt="국화" />
@@ -359,17 +408,23 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
             required
           />
           <S.PhotoRow>
-            {[0, 1, 2].map((idx) => (
-              <S.PhotoChoice
-                key={idx}
-                type="button"
-                $isSelected={selectedPhotoIndex === idx}
-                $bgImage={previewUrls[idx]}
-                onClick={() => setSelectedPhotoIndex(idx)}
-              >
-                <span>사진 {idx + 1}</span>
-              </S.PhotoChoice>
-            ))}
+            {[0, 1, 2].map((idx) => {
+              const hasPhoto = Boolean(previewUrls[idx]);
+              return (
+                <S.PhotoChoice
+                  key={idx}
+                  type="button"
+                  $isSelected={selectedPhotoIndex === idx && hasPhoto}
+                  $bgImage={previewUrls[idx]}
+                  onClick={() => {
+                    if (hasPhoto) setSelectedPhotoIndex(idx);
+                  }}
+                  disabled={!hasPhoto}
+                >
+                  <span>{hasPhoto ? `사진 ${idx + 1}` : '빈 공간'}</span>
+                </S.PhotoChoice>
+              );
+            })}
             <S.PhotoAdd>
               <span>
                 <b>＋</b>사진
@@ -385,7 +440,9 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
           <S.AiPhotoGuide>
             테두리로 표시된 사진을 중심으로 추모 이미지를 만듭니다.
           </S.AiPhotoGuide>
-          <S.SubmitMemory type="submit">추념하기</S.SubmitMemory>
+          <S.SubmitMemory type="submit" disabled={isSubmitting}>
+            {isSubmitting ? '등록 중...' : '추념하기'}
+          </S.SubmitMemory>
         </S.MemoryComposer>
       </S.Modal>
 
@@ -406,4 +463,4 @@ export const MemorialPark: React.FC<{ initialData?: MemorialData }> = ({ initial
       <S.PageTransition $isRun={showPageTransition} aria-hidden="true" />
     </S.Container>
   );
-};
+}

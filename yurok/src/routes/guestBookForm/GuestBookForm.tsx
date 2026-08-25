@@ -113,7 +113,7 @@ export default function GuestbookForm() {
             // 추억 작성 등에서 다시 써야 하므로 visitorId를 저장해둠
             saveVisitor(data.result);
 
-            navigator(`/altar/${key}`);
+            navigator(`/park/${key}`);
         } catch {
             setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
         } finally {

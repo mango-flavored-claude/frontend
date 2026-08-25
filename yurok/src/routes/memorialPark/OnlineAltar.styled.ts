@@ -93,11 +93,11 @@ export const Container = styled.div<{ $isPageTransitioning: boolean }>`
   font-family: Arial, "Noto Sans KR", sans-serif;
   scroll-behavior: auto;
   scroll-snap-type: y mandatory;
-  ${({ $isPageTransitioning }) =>
+  /* ${({ $isPageTransitioning }) =>
     $isPageTransitioning &&
     css`
       overflow: hidden;
-    `}
+    `} */
 
   button, textarea, input {
     font: inherit;
@@ -851,4 +851,23 @@ export const DetailAuthor = styled.p`
   margin-top: 20px;
   color: #7b7167;
   font-size: 10px;
+`;
+
+export const PortraitFrame = styled.div`
+  position: absolute;
+  top: 26%;
+  left: 49.8%;
+  transform: translate(-50%, -50%);
+  width: 193px;
+  height: 240px;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+`;
+
+export const PortraitImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 `;
