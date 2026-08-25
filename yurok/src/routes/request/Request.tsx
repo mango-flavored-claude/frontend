@@ -23,6 +23,16 @@ const BANK_OPTIONS = [
 // "yyyy-MM-dd'T'HH:mm:ss" 형식으로 맞춤
 const toApiDateTime = (value: string) => (value ? `${value}:00` : value);
 
+// 글쓰기 인원(조문 참여 인원 상한) × 공개 보관기간에 따른 요금표
+// 바깥 키: 보관기간(년), 안쪽 키: 인원 상한(명)
+const PRICE_TABLE: Record<number, Record<number, number>> = {
+  1: { 50: 69000, 200: 99000, 500: 139000 },
+  5: { 50: 99000, 200: 139000, 500: 189000 },
+  10: { 50: 129000, 200: 179000, 500: 239000 },
+};
+
+const formatPrice = (value: number) => `${value.toLocaleString('ko-KR')}원`;
+
 interface MemorialCreateResult {
   memorialId: number;
   inviteToken: string;
@@ -51,7 +61,6 @@ export interface RequestFormData {
   bankName: string;
   accountNumber: string;
   accountHolder: string;
-  greeting: string;
   writers: string;
   retention: string;
 }
@@ -63,7 +72,12 @@ export default function Request({
 }: RequestProps) {
   const { user } = useUser();
   const navigate = useNavigate();
-  const [step, setStep] = useState<number>(1);
+  // 개발 편의용: ?step=3 처럼 쿼리로 바로 원하는 단계부터 열 수 있게 함 (없으면 1단계부터)
+  const initialStep = (() => {
+    const raw = Number(new URLSearchParams(window.location.search).get('step'));
+    return raw >= 1 && raw <= 3 ? raw : 1;
+  })();
+  const [step, setStep] = useState<number>(initialStep);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null);
@@ -81,7 +95,6 @@ export default function Request({
     bankName: 'KB_KOOKMIN',
     accountNumber: '',
     accountHolder: '',
-    greeting: '직접 모시지 못하는 마음을 담아 온라인 추모 공간을 마련했습니다.',
     writers: '50명',
     retention: '1년',
   });
@@ -106,6 +119,10 @@ export default function Request({
   const handlePrev = () => {
     setStep((prev) => Math.max(prev - 1, 1));
   };
+
+  // 선택한 인원/보관기간에 맞는 가격을 요금표에서 찾아옴
+  const selectedPrice =
+    PRICE_TABLE[parseInt(formData.retention, 10)]?.[parseInt(formData.writers, 10)];
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -159,9 +176,11 @@ export default function Request({
         return;
       }
 
-      setCreateResult(data.result);
+      const result: MemorialCreateResult = data.result;
+
+      setCreateResult(result);
       // memorialId/inviteToken은 다른 화면·API(빈소 조회, 방명록 등)에서도 key로 써야 하니 저장해둠
-      saveMemorial(data.result);
+      saveMemorial(result);
       setIsSubmitted(true);
       onSubmitComplete?.(formData);
     } catch {
@@ -358,15 +377,6 @@ export default function Request({
                           />
                         </Field>
                       </TwoFields>
-
-                      <Field>
-                        <span>초대장 인사말</span>
-                        <textarea
-                          name="greeting"
-                          value={formData.greeting}
-                          onChange={handleInputChange}
-                        />
-                      </Field>
                     </FormGroup>
 
                     <FormActions>
@@ -395,8 +405,8 @@ export default function Request({
                     <ChoiceGrid>
                       {[
                         { code: 'SMALL', count: '50명' },
-                        { code: 'STANDARD', count: '100명' },
-                        { code: 'LARGE', count: '250명' },
+                        { code: 'STANDARD', count: '200명' },
+                        { code: 'LARGE', count: '500명' },
                       ].map((item) => (
                         <ChoiceLabel
                           key={item.count}
@@ -439,9 +449,12 @@ export default function Request({
                       ))}
                     </ChoiceGrid>
 
-                    <PricePending>
-                      선택 요금의 결제 금액은 가격 정책 확정 후 표시됩니다.
-                    </PricePending>
+                    <PriceBox>
+                      <PriceLabel>선택하신 요금제</PriceLabel>
+                      <PriceValue>
+                        {selectedPrice != null ? formatPrice(selectedPrice) : '-'}
+                      </PriceValue>
+                    </PriceBox>
 
                     <FormActions>
                       <PrevButton type="button" onClick={handlePrev}>
@@ -495,7 +508,7 @@ export default function Request({
                 )}
                 <div>
                   <span>결제 금액</span>
-                  <strong>추후 확정</strong>
+                  <strong>{selectedPrice != null ? formatPrice(selectedPrice) : '추후 확정'}</strong>
                 </div>
               </SummaryTable>
 
@@ -822,14 +835,26 @@ const ChoiceLabel = styled.label<ChoiceLabelProps>`
   }
 `;
 
-const PricePending = styled.div`
+const PriceBox = styled.div`
   margin-top: 17px;
-  padding: 13px;
-  border: 1px dashed #a99d90;
-  color: #756a5e;
+  padding: 16px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #b6aa9d;
+  color: #402f24;
   background: #f6f1ea;
-  font-size: 10px;
-  text-align: center;
+`;
+
+const PriceLabel = styled.span`
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #756a5e;
+`;
+
+const PriceValue = styled.strong`
+  font: 400 22px "Batang", serif;
+  letter-spacing: -0.02em;
 `;
 
 const CompleteCard = styled.div`
