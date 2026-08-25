@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import MainPage from "./routes/main/MainPage";
 import MemorialCard from "./routes/memorialCard/MemorialCard";
 import GuestbookForm from "./routes/guestBookForm/GuestBookForm";
+import Altar from "./routes/altar/Altar";
 
 const router = createBrowserRouter([
   {
@@ -15,6 +16,10 @@ const router = createBrowserRouter([
   {
     path: "/guestBookForm/:key",
     element: <GuestbookForm />
+  },
+  {
+    path: "/altar/:key",
+    element: <Altar />
   },
 ]);
 

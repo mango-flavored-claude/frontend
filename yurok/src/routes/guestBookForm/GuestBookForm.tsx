@@ -1,13 +1,40 @@
 import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 
 export default function GuestbookForm() {
+    const { key } = useParams<{ key: string }>();
+
     const [name, setName] = useState("");
     const [relation, setRelation] = useState("");
     const [phone, setPhone] = useState("");
 
+    const navigator = useNavigate();
+
+    const formatPhoneNumber = (value: string) => {
+        // 숫자만 남기기
+        const digits = value.replace(/\D/g, "").slice(0, 11);
+
+        if (digits.length < 4) {
+            return digits;
+        }
+        if (digits.length < 8) {
+            return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+        }
+        // 11자리(010-XXXX-XXXX) / 10자리(0XX-XXX-XXXX) 모두 대응
+        if (digits.length === 11) {
+            return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+        }
+        return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPhone(formatPhoneNumber(e.target.value));
+    };
+
     const handleSubmit = () => {
         if (!name.trim() || !relation.trim() || !phone.trim()) return;
+        navigator(`/altar/${key}`);
     };
 
     return (
@@ -29,7 +56,7 @@ export default function GuestbookForm() {
                     <Label>고인과의 관계</Label>
                     <Input
                         type="text"
-                        placeholder="홍길동"
+                        placeholder="고인의 요양원 친구"
                         value={relation}
                         onChange={(e) => setRelation(e.target.value)}
                     />
@@ -38,10 +65,12 @@ export default function GuestbookForm() {
                 <FieldGroup>
                     <Label>연락처</Label>
                     <Input
-                        type="text"
-                        placeholder="홍길동"
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="010-1234-5678"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={handlePhoneChange}
+                        maxLength={13}
                     />
                 </FieldGroup>
 
