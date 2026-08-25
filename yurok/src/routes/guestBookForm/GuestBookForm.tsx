@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
+import { saveVisitor } from "../../utils/visitorStorage";
+
+// 조문객 첫 입장 API: POST /api/memorials/{inviteToken}/visitors
+const API_BASE = import.meta.env.VITE_API_URL;
 
 export default function GuestbookForm() {
     const { key } = useParams<{ key: string }>();
@@ -9,6 +13,8 @@ export default function GuestbookForm() {
     const [relation, setRelation] = useState("");
     const [phone, setPhone] = useState("");
     const [copied, setCopied] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const navigator = useNavigate();
 
@@ -45,9 +51,40 @@ export default function GuestbookForm() {
         }
     };
 
-    const handleSubmit = () => {
-        if (!name.trim() || !relation.trim() || !phone.trim()) return;
-        navigator(`/altar/${key}`);
+    const canSubmit = !!name.trim() && !!relation.trim() && !!phone.trim() && !isSubmitting;
+
+    const handleSubmit = async () => {
+        if (!canSubmit) return;
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            const res = await fetch(`${API_BASE}/api/memorials/${key}/visitors`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name,
+                    relationship: relation,
+                    phone: phone.replace(/\D/g, ""), // "010-1234-5678" → "01012345678"
+                }),
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                setError(data.message || "방명록 등록에 실패했습니다. 다시 시도해주세요.");
+                return;
+            }
+
+            // 추억 작성 등에서 다시 써야 하므로 visitorId를 저장해둠
+            saveVisitor(data.result);
+
+            navigator(`/altar/${key}`);
+        } catch {
+            setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -108,11 +145,10 @@ export default function GuestbookForm() {
                     </AccountCard>
                 </AccountSection>
 
-                <SubmitButton
-                    onClick={handleSubmit}
-                    disabled={!name.trim() || !relation.trim() || !phone.trim()}
-                >
-                    헌화하기 →
+                {error && <ErrorText>{error}</ErrorText>}
+
+                <SubmitButton onClick={handleSubmit} disabled={!canSubmit}>
+                    {isSubmitting ? "등록 중..." : "헌화하기 →"}
                 </SubmitButton>
             </Card>
         </Wrapper>
@@ -248,6 +284,13 @@ const CopyButton = styled.button`
   &:hover {
     background: #F0EEE8;
   }
+`;
+
+const ErrorText = styled.p`
+  font-size: 13px;
+  color: #C0392B;
+  margin: -8px 0 16px;
+  text-align: center;
 `;
 
 const SubmitButton = styled.button`

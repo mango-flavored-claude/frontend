@@ -13,10 +13,6 @@ const router = createBrowserRouter([
     element: <MainPage />,
   },
   {
-    path: "/login",
-    element: <Login />
-  },
-  {
     path: "/intro/:key",
     element: <MemorialCard />
   },

@@ -1,19 +1,61 @@
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import styled from "styled-components";
+import { saveVisitor } from "../../utils/visitorStorage";
 
-// TODO: 지금은 서버에 전화번호를 확인할 API가 없어서, 입력만 하면 통과되는 더미 검증임.
-// 나중에 "이 번호로 방명록을 작성한 적이 있는지" 확인하는 API가 생기면 여기서 검증해야 함.
+// 조문객 재입장 API: POST /api/memorials/{inviteToken}/visitors/reentry
+const API_BASE = import.meta.env.VITE_API_URL;
+
 export default function ReEnter() {
     const [phone, setPhone] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
     const { key } = useParams<{ key: string }>();
 
-    const canSubmit = !!phone.trim();
+    const formatPhoneNumber = (value: string) => {
+        const digits = value.replace(/\D/g, "").slice(0, 11);
 
-    const handleSubmit = () => {
+        if (digits.length < 4) return digits;
+        if (digits.length < 8) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+        if (digits.length === 11) {
+            return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+        }
+        return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    };
+
+    const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setPhone(formatPhoneNumber(e.target.value));
+    };
+
+    const canSubmit = !!phone.trim() && !isSubmitting;
+
+    const handleSubmit = async () => {
         if (!canSubmit) return;
-        navigate(`/altar/${key}`);
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            const res = await fetch(`${API_BASE}/api/memorials/${key}/visitors/reentry`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone: phone.replace(/\D/g, "") }),
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                setError(data.message || "등록된 연락처를 찾을 수 없습니다. 다시 확인해주세요.");
+                return;
+            }
+
+            saveVisitor(data.result);
+            navigate(`/altar/${key}`);
+        } catch {
+            setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -28,14 +70,18 @@ export default function ReEnter() {
                     <Label>연락처</Label>
                     <Input
                         type="tel"
+                        inputMode="numeric"
                         placeholder="010-1234-5678"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={handlePhoneChange}
+                        maxLength={13}
                     />
                 </FieldGroup>
 
+                {error && <ErrorText>{error}</ErrorText>}
+
                 <SubmitButton onClick={handleSubmit} disabled={!canSubmit}>
-                    재입장하기 →
+                    {isSubmitting ? "확인 중..." : "재입장하기 →"}
                 </SubmitButton>
 
                 <BackLink to={`/intro/${key}`}>← 돌아가기</BackLink>
@@ -111,6 +157,13 @@ const Input = styled.input`
   &:focus {
     border-color: #c9a063;
   }
+`;
+
+const ErrorText = styled.p`
+  font-size: 13px;
+  color: #c0392b;
+  margin: -8px 0 16px;
+  text-align: center;
 `;
 
 const SubmitButton = styled.button`
