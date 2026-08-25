@@ -2,6 +2,9 @@ import React, { useRef, useState, WheelEvent } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useUser } from '../../store/UserContext';
+import { publicAsset } from '../../utils/publicAsset';
+
+const mainBackground = publicAsset('image/yurok-ink-line-background.svg');
 
 // ==========================================
 // 2. 각 페이지(섹션) 컴포넌트
@@ -42,7 +45,7 @@ const FirstPage: React.FC<NavigablePageProps> = ({ onNavigate }) => {
         </HeroCopy>
         <HeroVisual>
           <HeroImage
-            src="./image/yurok-altar-vector-v6.png"
+            src={publicAsset('image/yurok-altar-vector-v6.png')}
             alt="유록 온라인 빈소 예시"
           />
         </HeroVisual>
@@ -442,7 +445,7 @@ const HeroCopy = styled.div`
   flex-direction: column;
   justify-content: center;
   background-color: #f7f3eb;
-  background-image: url('./image/yurok-ink-line-background.svg');
+  background-image: url('${mainBackground}');
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;

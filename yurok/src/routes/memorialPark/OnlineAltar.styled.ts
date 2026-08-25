@@ -1,4 +1,8 @@
 import styled, { keyframes, css } from 'styled-components';
+import { publicAsset } from '../../utils/publicAsset';
+
+const altarBackground = publicAsset('image/yurok-altar-vector-v9-blank-nameplate.png');
+const memoryBackground = publicAsset('image/yurok-ink-line-background.svg');
 
 const flowerAppear = keyframes`
   0% {
@@ -139,7 +143,7 @@ export const AltarArtboard = styled.div`
   top: 50%;
   width: max(100%, calc(100vh * 1.77966));
   height: max(100%, calc(100vw / 1.77966));
-  background: url('./yurok-altar-vector-v9-blank-nameplate.png') center/100% 100% no-repeat;
+  background: url('${altarBackground}') center/100% 100% no-repeat;
   transform: translate(-50%, -50%);
 `;
 
@@ -353,7 +357,7 @@ export const MemorySection = styled.section`
   padding: 96px 7vw 180px;
   overflow: hidden;
   background-color: #eee9df;
-  background-image: url('./yurok-ink-line-background.svg'),
+  background-image: url('${memoryBackground}'),
     linear-gradient(90deg, rgba(99, 82, 62, 0.025) 1px, transparent 1px),
     linear-gradient(rgba(99, 82, 62, 0.02) 1px, transparent 1px),
     radial-gradient(ellipse at 72% 22%, rgba(107, 90, 67, 0.07), transparent 34%);

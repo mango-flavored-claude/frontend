@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { useInviteToken } from "../../hooks/useInviteToken";
+import { API_BASE_URL as API_BASE } from "../../utils/api";
 
 // 온라인 빈소 메인 조회: GET /api/memorials/{inviteToken}
 // 조의금 계좌 조회는 방명록 작성 화면(GuestBookForm)에서 함
-const API_BASE = import.meta.env.VITE_API_URL;
 
 interface MemorialHome {
   memorialId: number;

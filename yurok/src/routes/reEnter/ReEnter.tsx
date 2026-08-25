@@ -3,10 +3,9 @@ import { useNavigate, Link } from "react-router-dom";
 import styled from "styled-components";
 import { saveVisitor } from "../../utils/visitorStorage";
 import { useInviteToken } from "../../hooks/useInviteToken";
+import { API_BASE_URL as API_BASE } from "../../utils/api";
 
 // 조문객 재입장 API: POST /api/memorials/{inviteToken}/visitors/reentry
-const API_BASE = import.meta.env.VITE_API_URL;
-
 export default function ReEnter() {
     const [phone, setPhone] = useState("");
     const [error, setError] = useState<string | null>(null);
