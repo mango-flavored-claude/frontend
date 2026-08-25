@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { useNavigate, useParams } from "react-router-dom";
 import AddMemoryCard from "../addMemoryCard/AddMemoryCard";
@@ -22,7 +23,21 @@ function randomSpan(): 1 | 2 {
   return Math.random() < 0.25 ? 2 : 1;
 }
 
-// 사진마다 위치/크기/기울기를 무작위로 미리 계산해둠
+// 조문객이 "추념하기"로 남긴 글을 흉내낸 더미 데이터.
+// TODO: 실제 등록 API/조회 API가 생기면 여기 대신 서버에서 받아온 목록을 써야 함.
+const SAMPLE_NAMES = ["김민준", "이서연", "박도윤", "최지우", "정하은", "강시우", "조수아", "윤예준"];
+const SAMPLE_MESSAGES = [
+  "함께했던 시간 모두 소중했습니다. 편히 쉬세요.",
+  "언제나 그리울 거예요. 그동안 고마웠습니다.",
+  "함께 나눴던 이야기들이 아직도 생생합니다.",
+  "웃음이 많았던 모습을 기억할게요.",
+  "고맙습니다. 그리고 사랑합니다.",
+  "따뜻했던 기억들 오래 간직하겠습니다.",
+  "언제나 든든한 분이셨어요. 감사했습니다.",
+  "함께 걸었던 그 길을 잊지 못할 것 같아요.",
+];
+
+// 사진마다 위치/크기/기울기/글을 무작위로 미리 계산해둠
 // (렌더링마다 바뀌면 계속 움직여 보이므로, 한 번만 계산되도록 useMemo로 고정)
 function generatePhotoLayout() {
   return Array.from({ length: PHOTO_COUNT }).map((_, i) => ({
@@ -31,6 +46,8 @@ function generatePhotoLayout() {
     colSpan: randomSpan(),
     rowSpan: randomSpan(),
     rotate: Math.random() * 10 - 5, // -5 ~ 5도로 살짝 삐뚤게
+    name: SAMPLE_NAMES[i % SAMPLE_NAMES.length],
+    message: SAMPLE_MESSAGES[i % SAMPLE_MESSAGES.length],
   }));
 }
 
@@ -39,6 +56,11 @@ export default function NextPage() {
   const [isLeaving, setIsLeaving] = useState(false); // 위로 스크롤해서 이전 화면으로 돌아가는 중인지
   const [isAddMemoryOpen, setIsAddMemoryOpen] = useState(false); // 추억 남기기 팝업이 열려있는지
   const [toastMessage, setToastMessage] = useState<string | null>(null); // 화면 가운데 뜨는 감사 토스트
+  const [selectedPhoto, setSelectedPhoto] = useState<{
+    src: string;
+    name: string;
+    message: string;
+  } | null>(null); // 클릭해서 크게 본 사진(+글)
   const photos = useMemo(generatePhotoLayout, []);
   const navigate = useNavigate();
   const { key } = useParams<{ key: string }>();
@@ -105,7 +127,7 @@ export default function NextPage() {
   return (
     <Wrapper $isVisible={isVisible} $isLeaving={isLeaving}>
       <AddMemoryButton onClick={() => setIsAddMemoryOpen(true)}>
-        + 추억 남기기
+        + 추념하기
       </AddMemoryButton>
 
       {isAddMemoryOpen && (
@@ -124,7 +146,13 @@ export default function NextPage() {
         <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       )}
 
-      <Title>고인과 함께한 소중한 순간들</Title>
+      <TitleGroup>
+        <TitleStack>
+          <Title>추념</Title>
+          <Hanja>追念</Hanja>
+        </TitleStack>
+        <Title>공간</Title>
+      </TitleGroup>
       <Canvas>
         {photos.map((photo) => (
           <PhotoCell
@@ -134,10 +162,28 @@ export default function NextPage() {
               gridRow: `span ${photo.rowSpan}`,
             }}
           >
-            <PhotoItem src={photo.src} rotate={photo.rotate} index={photo.id} />
+            <PhotoItem
+              src={photo.src}
+              rotate={photo.rotate}
+              index={photo.id}
+              onClick={() =>
+                setSelectedPhoto({
+                  src: photo.src,
+                  name: photo.name,
+                  message: photo.message,
+                })
+              }
+            />
           </PhotoCell>
         ))}
       </Canvas>
+
+      {selectedPhoto && (
+        <MemoryViewModal
+          photo={selectedPhoto}
+          onClose={() => setSelectedPhoto(null)}
+        />
+      )}
     </Wrapper>
   );
 }
@@ -163,7 +209,9 @@ function Toast({ message, onDismiss }: { message: string; onDismiss: () => void 
     };
   }, [onDismiss]);
 
-  return (
+  // document.body로 바로 렌더링(Portal)해야, Wrapper의 transform에 영향받지 않고
+  // 항상 "현재 보이는 화면" 기준으로 정확히 뜸(스크롤 위치와 무관하게)
+  return createPortal(
     <ToastOverlay>
       <ToastBox $isVisible={isVisible}>
         <ToastTitle>{firstLine}</ToastTitle>
@@ -171,13 +219,24 @@ function Toast({ message, onDismiss }: { message: string; onDismiss: () => void 
           <ToastDescription key={i}>{line}</ToastDescription>
         ))}
       </ToastBox>
-    </ToastOverlay>
+    </ToastOverlay>,
+    document.body
   );
 }
 
 // 사진 하나하나가 "실제로 화면(뷰포트)에 들어왔을 때" 스스로 나타나는 컴포넌트.
 // 처음부터 보이는 사진들은 바로 나타나고, 스크롤해서 새로 들어오는 사진은 그때 나타남.
-function PhotoItem({ src, rotate, index }: { src: string; rotate: number; index: number }) {
+function PhotoItem({
+  src,
+  rotate,
+  index,
+  onClick,
+}: {
+  src: string;
+  rotate: number;
+  index: number;
+  onClick: () => void;
+}) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [revealed, setRevealed] = useState(false);
 
@@ -207,11 +266,51 @@ function PhotoItem({ src, rotate, index }: { src: string; rotate: number; index:
     <PhotoBloom
       ref={imgRef}
       src={src}
-      alt=""
+      alt="조문객이 남긴 사진. 눌러서 남긴 글 보기"
       decoding="async"
       $revealed={revealed}
       $rotate={rotate}
+      onClick={onClick}
     />
+  );
+}
+
+const MODAL_TRANSITION_MS = 250; // 추념하기 팝업과 같은 속도
+
+// 사진을 클릭하면 조문객이 남긴 글을 크게 보여주는 팝업
+function MemoryViewModal({
+  photo,
+  onClose,
+}: {
+  photo: { src: string; name: string; message: string };
+  onClose: () => void;
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setIsVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(onClose, MODAL_TRANSITION_MS);
+  };
+
+  // Portal로 document.body에 직접 렌더링(이유는 Toast와 동일)
+  return createPortal(
+    <ViewOverlay $isVisible={isVisible} onClick={handleClose}>
+      <ViewCard $isVisible={isVisible} onClick={(e) => e.stopPropagation()}>
+        <ViewCloseButton onClick={handleClose} aria-label="닫기">
+          ×
+        </ViewCloseButton>
+
+        <ViewPhoto src={photo.src} alt={`${photo.name}님이 남긴 사진`} />
+        <ViewName>{photo.name}</ViewName>
+        <ViewMessage>{photo.message}</ViewMessage>
+      </ViewCard>
+    </ViewOverlay>,
+    document.body
   );
 }
 
@@ -298,13 +397,38 @@ const AddMemoryButton = styled.button`
   }
 `;
 
+const TitleGroup = styled.div`
+  margin: 48px 0 24px;
+  display: flex;
+  align-items: flex-start; /* 추념/공간이 같은 줄의 윗선에 나란히 맞춰지도록 */
+  justify-content: center;
+  gap: 10px;
+`;
+
+const TitleStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
 const Title = styled.h1`
-  font-size: 22px;
+  font-size: 28px; /* 기존 22px보다 키움 */
   font-weight: 700;
   color: #1a1a1a;
   text-align: center;
   letter-spacing: -0.02em;
-  margin: 48px 0 8px;
+  line-height: 1.2;
+  margin: 0;
+`;
+
+const Hanja = styled.p`
+  font-size: 28px; /* 추념과 같은 크기 */
+  font-weight: 700;
+  color: #9c9691; /* 회색빛 */
+  text-align: center;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0;
 `;
 
 // 화면을 꽉 채우는 그리드. auto-fill이라 화면 너비에 맞춰 칸 개수가 자동으로 조절됨
@@ -329,6 +453,7 @@ const PhotoBloom = styled.img<{ $revealed: boolean; $rotate: number }>`
   height: 100%;
   object-fit: cover;
   display: block;
+  cursor: pointer; /* 클릭해서 글 보기 */
   will-change: transform, opacity; /* 브라우저가 이 두 속성을 미리 최적화해두도록 힌트를 줌 */
 
   /* 물감이 톡 떨어져서 몽글몽글 퍼지는 느낌: 작고 흐릿하게 시작 → 커지면서 또렷해짐 + 살짝 기울어짐 */
@@ -344,4 +469,82 @@ const PhotoBloom = styled.img<{ $revealed: boolean; $rotate: number }>`
     opacity ${FADE_MS}ms ease,
     filter ${HEAVY_EFFECT_MS}ms ease,
     border-radius ${HEAVY_EFFECT_MS}ms ease;
+`;
+
+const ViewOverlay = styled.div<{ $isVisible: boolean }>`
+  position: fixed;
+  inset: 0;
+  z-index: 55; /* 추념하기 팝업(50)보다 위, 토스트(60)보다는 아래 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+
+  background: rgba(0, 0, 0, 0.45);
+  transition: opacity ${MODAL_TRANSITION_MS}ms ease;
+  opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
+`;
+
+const ViewCard = styled.div<{ $isVisible: boolean }>`
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  padding: 32px;
+  text-align: center;
+  box-sizing: border-box;
+
+  transition: opacity ${MODAL_TRANSITION_MS}ms ease, transform ${MODAL_TRANSITION_MS}ms ease;
+  opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
+  transform: scale(${({ $isVisible }) => ($isVisible ? 1 : 0.94)});
+`;
+
+const ViewCloseButton = styled.button`
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: #828282;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: #f4f2ec;
+    color: #1a1a1a;
+  }
+`;
+
+const ViewPhoto = styled.img`
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 14px;
+  display: block;
+  margin: 0 0 20px;
+`;
+
+const ViewName = styled.p`
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 10px;
+`;
+
+const ViewMessage = styled.p`
+  font-size: 14px;
+  line-height: 1.7;
+  color: #666666;
+  margin: 0;
+  white-space: pre-line;
 `;

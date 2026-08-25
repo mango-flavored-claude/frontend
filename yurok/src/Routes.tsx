@@ -6,15 +6,23 @@ import Altar from "./routes/altar/Altar";
 import NextPage from "./routes/next/NextPage";
 import Login from "./routes/account/Login";
 import Request from "./routes/request/Request";
-
+import ReEnter from "./routes/reEnter/ReEnter";
 const router = createBrowserRouter([
   {
     path: "/",
     element: <MainPage />,
   },
   {
+    path: "/login",
+    element: <Login />
+  },
+  {
     path: "/intro/:key",
     element: <MemorialCard />
+  },
+  {
+    path: "/reenter/:key",
+    element: <ReEnter />
   },
   {
     path: "/guestBookForm/:key",

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# 환경변수 (서버 주소 등, 사람마다/환경마다 달라질 수 있어서 커밋하지 않음)
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
