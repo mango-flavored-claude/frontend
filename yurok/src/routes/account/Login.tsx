@@ -129,7 +129,7 @@ export default function Login() {
 // ==========================================
 
 const FlowPage = styled.section`
-  min-height: 100vh;
+  padding-bottom: 36px;
   background-color: #eee9df;
   background-image: radial-gradient(#cbc3b7 0.7px, transparent 0.7px);
   background-size: 6px 6px;

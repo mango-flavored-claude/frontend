@@ -109,9 +109,7 @@ const ThirdPage: React.FC = () => {
           <div>
             <p>PLAN</p>
             <h2>
-              필요한 규모와 기간만큼
-              <br />
-              선택하세요.
+              필요한 규모와 기간만큼 선택하세요.
             </h2>
           </div>
         </SectionHeading>
@@ -596,7 +594,7 @@ const HeroImage = styled.img`
 
 // --- 서비스 소개 (2페이지) ---
 const Intro = styled.section`
-  padding-top: calc(78px + 4vh);
+  padding-top: 78px;
   padding-bottom: 4vh;
   padding-inline: 7vw;
   background: #fdfbf7;
@@ -852,7 +850,7 @@ const PageSection = styled.div`
 
 const ScrollContainer = styled.div`
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   overflow: hidden;
   position: relative;
 `;
