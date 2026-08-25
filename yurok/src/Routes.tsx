@@ -9,6 +9,7 @@ import SignUp from "./routes/account/SignUp";
 import Request from "./routes/request/Request";
 import ReEnter from "./routes/reEnter/ReEnter";
 import { MemorialPark } from "./routes/memorialPark/MemorialPark";
+import RequireAuth from "./components/RequireAuth";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -45,7 +46,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/request",
-    element: <Request />
+    element: (
+      <RequireAuth>
+        <Request />
+      </RequireAuth>
+    )
   },
   {
     path: "/park/:key",

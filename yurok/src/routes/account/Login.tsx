@@ -1,5 +1,5 @@
 import React, { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import Toast, { type ToastVariant } from '../../components/Toast';
 import { useUser } from '../../store/UserContext';
@@ -12,19 +12,17 @@ const AFTER_SUCCESS_DELAY_MS = 1000; // 토스트를 잠깐 보여준 뒤 신청
 // ==========================================
 // 2. React Component implementation
 // ==========================================
-interface LoginProps {
-  showNotice?: boolean;
-}
-
-export default function Login({
-  showNotice = false,
-}: LoginProps) {
+export default function Login() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUser } = useUser();
+
+  // 로그인이 필요한 화면(예: /request)에서 RequireAuth에 의해 쫓겨 왔을 때만 안내 문구를 보여줌
+  const showNotice = Boolean((location.state as { showNotice?: boolean } | null)?.showNotice);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

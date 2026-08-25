@@ -23,6 +23,12 @@ const BANK_OPTIONS = [
 // "yyyy-MM-dd'T'HH:mm:ss" 형식으로 맞춤
 const toApiDateTime = (value: string) => (value ? `${value}:00` : value);
 
+// 서버가 내려주는 inviteUrl(예: http://localhost:3000/memorial/{token})은
+// 실제 이 프론트 배포 구조(base path, 라우트)랑 안 맞는 값이라 그대로 못 씀.
+// inviteToken만 받아서 우리 쪽 실제 초대 링크(/intro/:key)로 직접 조립함.
+const buildInviteUrl = (inviteToken: string) =>
+  `${window.location.origin}${import.meta.env.BASE_URL}intro/${inviteToken}`;
+
 interface MemorialCreateResult {
   memorialId: number;
   inviteToken: string;
@@ -51,7 +57,6 @@ export interface RequestFormData {
   bankName: string;
   accountNumber: string;
   accountHolder: string;
-  greeting: string;
   writers: string;
   retention: string;
 }
@@ -81,7 +86,6 @@ export default function Request({
     bankName: 'KB_KOOKMIN',
     accountNumber: '',
     accountHolder: '',
-    greeting: '직접 모시지 못하는 마음을 담아 온라인 추모 공간을 마련했습니다.',
     writers: '50명',
     retention: '1년',
   });
@@ -159,9 +163,15 @@ export default function Request({
         return;
       }
 
-      setCreateResult(data.result);
+      // 서버가 준 inviteUrl 대신 실제 이 프론트에서 열리는 링크로 바꿔치기
+      const result: MemorialCreateResult = {
+        ...data.result,
+        inviteUrl: buildInviteUrl(data.result.inviteToken),
+      };
+
+      setCreateResult(result);
       // memorialId/inviteToken은 다른 화면·API(빈소 조회, 방명록 등)에서도 key로 써야 하니 저장해둠
-      saveMemorial(data.result);
+      saveMemorial(result);
       setIsSubmitted(true);
       onSubmitComplete?.(formData);
     } catch {
@@ -358,15 +368,6 @@ export default function Request({
                           />
                         </Field>
                       </TwoFields>
-
-                      <Field>
-                        <span>초대장 인사말</span>
-                        <textarea
-                          name="greeting"
-                          value={formData.greeting}
-                          onChange={handleInputChange}
-                        />
-                      </Field>
                     </FormGroup>
 
                     <FormActions>
