@@ -17,7 +17,7 @@ export default function MemorialCard() {
           <EnterButton to={`/guestBookForm/${key}`}>
             방명록 작성하고 입장 →
           </EnterButton>
-          <ReEnterButton to="/">재입장 →</ReEnterButton>
+          <ReEnterButton to={`/reenter/${key}`}>재입장 →</ReEnterButton>
         </ButtonGroup>
       </Card>
     </Wrapper>

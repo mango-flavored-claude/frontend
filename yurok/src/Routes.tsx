@@ -4,6 +4,8 @@ import MemorialCard from "./routes/memorialCard/MemorialCard";
 import GuestbookForm from "./routes/guestBookForm/GuestBookForm";
 import Altar from "./routes/altar/Altar";
 import NextPage from "./routes/next/NextPage";
+import Login from "./routes/login/Login";
+import ReEnter from "./routes/reEnter/ReEnter";
 
 const router = createBrowserRouter([
   {
@@ -11,8 +13,16 @@ const router = createBrowserRouter([
     element: <MainPage />,
   },
   {
+    path: "/login",
+    element: <Login />
+  },
+  {
     path: "/intro/:key",
     element: <MemorialCard />
+  },
+  {
+    path: "/reenter/:key",
+    element: <ReEnter />
   },
   {
     path: "/guestBookForm/:key",
