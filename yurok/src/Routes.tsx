@@ -46,7 +46,7 @@ const router = createBrowserRouter([
   },
 ],
 {
-    basename: "/frontend/yurok",
+    basename: "/frontend",
   }
 );
 
