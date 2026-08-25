@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { useNavigate, useParams } from "react-router-dom";
+import AddMemoryCard from "../addMemoryCard/AddMemoryCard";
 
 const WRAPPER_TRANSITION_MS = 400; // Altar에서 사라지는 시간과 맞춰서 자연스럽게 이어지도록 함
 const SCROLL_HOLD_MS = 1000; // 화면 전환 직후, 이 시간 동안은 맨 위 상태를 유지하고 스크롤을 막음
@@ -36,6 +37,8 @@ function generatePhotoLayout() {
 export default function NextPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false); // 위로 스크롤해서 이전 화면으로 돌아가는 중인지
+  const [isAddMemoryOpen, setIsAddMemoryOpen] = useState(false); // 추억 남기기 팝업이 열려있는지
+  const [toastMessage, setToastMessage] = useState<string | null>(null); // 화면 가운데 뜨는 감사 토스트
   const photos = useMemo(generatePhotoLayout, []);
   const navigate = useNavigate();
   const { key } = useParams<{ key: string }>();
@@ -101,9 +104,25 @@ export default function NextPage() {
 
   return (
     <Wrapper $isVisible={isVisible} $isLeaving={isLeaving}>
-      <AddMemoryButton onClick={() => navigate(`/addMemory/${key}`)}>
+      <AddMemoryButton onClick={() => setIsAddMemoryOpen(true)}>
         + 추억 남기기
       </AddMemoryButton>
+
+      {isAddMemoryOpen && (
+        <AddMemoryCard
+          onClose={() => setIsAddMemoryOpen(false)}
+          onSubmit={() => {
+            setIsAddMemoryOpen(false);
+            setToastMessage(
+              "기억을 남겨주셔서 감사합니다.\n남겨주신 기억은 유족에게 소중히 전달됩니다."
+            );
+          }}
+        />
+      )}
+
+      {toastMessage && (
+        <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
+      )}
 
       <Title>고인과 함께한 소중한 순간들</Title>
       <Canvas>
@@ -120,6 +139,39 @@ export default function NextPage() {
         ))}
       </Canvas>
     </Wrapper>
+  );
+}
+
+const TOAST_VISIBLE_MS = 2500; // 토스트가 화면에 떠 있는 시간
+const TOAST_TRANSITION_MS = 300; // 토스트가 뜨고 사라질 때의 애니메이션 시간
+
+// 화면 가운데에 잠깐 떴다가 스스로 사라지는 토스트(안내 문구)
+// message에 "\n"이 있으면 줄바꿈되고, 첫 줄만 더 크게 강조돼서 보임
+function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [firstLine, ...restLines] = message.split("\n");
+
+  useEffect(() => {
+    const showId = requestAnimationFrame(() => setIsVisible(true));
+    const hideTimer = setTimeout(() => setIsVisible(false), TOAST_VISIBLE_MS);
+    const removeTimer = setTimeout(onDismiss, TOAST_VISIBLE_MS + TOAST_TRANSITION_MS);
+
+    return () => {
+      cancelAnimationFrame(showId);
+      clearTimeout(hideTimer);
+      clearTimeout(removeTimer);
+    };
+  }, [onDismiss]);
+
+  return (
+    <ToastOverlay>
+      <ToastBox $isVisible={isVisible}>
+        <ToastTitle>{firstLine}</ToastTitle>
+        {restLines.map((line, i) => (
+          <ToastDescription key={i}>{line}</ToastDescription>
+        ))}
+      </ToastBox>
+    </ToastOverlay>
   );
 }
 
@@ -163,9 +215,49 @@ function PhotoItem({ src, rotate, index }: { src: string; rotate: number; index:
   );
 }
 
+const ToastOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 60; /* 추억 남기기 팝업(50)보다 위, 팝업이 닫힌 뒤에 뜨므로 겹칠 일은 없음 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  pointer-events: none; /* 뒤에 있는 화면 클릭/스크롤을 막지 않음 */
+`;
+
+const ToastBox = styled.div<{ $isVisible: boolean }>`
+  max-width: 360px;
+  background: #5c4a36; /* 불투명한 어두운 베이지 */
+  color: #ffffff;
+  text-align: center;
+  padding: 22px 28px;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+
+  transition: opacity ${TOAST_TRANSITION_MS}ms ease, transform ${TOAST_TRANSITION_MS}ms ease;
+  opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
+  transform: scale(${({ $isVisible }) => ($isVisible ? 1 : 0.92)});
+`;
+
+const ToastTitle = styled.p`
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 0 0 4px;
+`;
+
+const ToastDescription = styled.p`
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+`;
+
 const Wrapper = styled.div<{ $isVisible: boolean; $isLeaving: boolean }>`
   min-height: 100vh;
-  background: #f9f8f6;
+  background: #ffffff; /* Altar(직전 화면)와 같은 배경색. Wrapper가 전체 콘텐츠를 감싸므로 스크롤을 내려도 계속 유지됨 */
   display: flex;
   flex-direction: column;
   align-items: center;

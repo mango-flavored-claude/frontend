@@ -52,6 +52,7 @@ export default function Altar() {
 // TODO: 실제 내용이 정해지기 전까지는 스크롤 테스트를 위한 임시 높이입니다.
 const Wrapper = styled.div<{ $isVisible: boolean; $isLeaving: boolean }>`
   min-height: 200vh;
+  background: #ffffff; /* NextPage(다음 화면)와 같은 배경색으로 명시적으로 맞춰둠 */
   display: flex;
   justify-content: center;
   padding-top: 40px;
