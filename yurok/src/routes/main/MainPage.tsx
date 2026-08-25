@@ -124,7 +124,7 @@ const ThirdPage: React.FC = () => {
               <li>글쓰기 최대 50명</li>
               <li>AI 추억 풍경 최대 50개</li>
             </ul>
-            <strong>금액 추후 확정</strong>
+            <strong>69,000원~</strong>
           </PlanCard>
           <PlanCard $featured>
             <span className="tag">RECOMMENDED</span>
@@ -134,7 +134,7 @@ const ThirdPage: React.FC = () => {
               <li>글쓰기 최대 200명</li>
               <li>AI 추억 풍경 최대 200개</li>
             </ul>
-            <strong>금액 추후 확정</strong>
+            <strong>99,000원~</strong>
           </PlanCard>
           <PlanCard>
             <span className="tag">LARGE</span>
@@ -144,7 +144,7 @@ const ThirdPage: React.FC = () => {
               <li>글쓰기 최대 500명</li>
               <li>AI 추억 풍경 최대 500개</li>
             </ul>
-            <strong>금액 추후 확정</strong>
+            <strong>139,000원~</strong>
           </PlanCard>
         </PlanGrid>
         <RetentionRow>
