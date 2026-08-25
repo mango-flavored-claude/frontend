@@ -1,0 +1,49 @@
+name: Deploy React App to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치에 push될 때 자동 실행
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+# 모든 run 명령어를 yurok 폴더 기준에서 실행하도록 설정
+defaults:
+  run:
+    working-directory: ./frontend/yurok
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: ./frontend/yurok/package-lock.json  # package-lock 위치 지정
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: React 프로젝트 빌드
+        run: npm run build
+
+      - name: Pages 아티팩트 업로드
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './frontend/yurok/dist'  # 빌드 결과물(dist) 경로 지정 (CRA 사용 시 ./frontend/yurok/build)
+
+      - name: GitHub Pages에 배포
+        id: deployment
+        uses: actions/deploy-pages@v4

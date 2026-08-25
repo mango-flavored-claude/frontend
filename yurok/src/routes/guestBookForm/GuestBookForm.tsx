@@ -8,11 +8,15 @@ export default function GuestbookForm() {
     const [name, setName] = useState("");
     const [relation, setRelation] = useState("");
     const [phone, setPhone] = useState("");
+    const [copied, setCopied] = useState(false);
 
     const navigator = useNavigate();
 
+    const bankName = "국민은행";
+    const accountHolder = "김OO";
+    const accountNumber = "123456-78-901234";
+
     const formatPhoneNumber = (value: string) => {
-        // 숫자만 남기기
         const digits = value.replace(/\D/g, "").slice(0, 11);
 
         if (digits.length < 4) {
@@ -21,7 +25,6 @@ export default function GuestbookForm() {
         if (digits.length < 8) {
             return `${digits.slice(0, 3)}-${digits.slice(3)}`;
         }
-        // 11자리(010-XXXX-XXXX) / 10자리(0XX-XXX-XXXX) 모두 대응
         if (digits.length === 11) {
             return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
         }
@@ -30,6 +33,16 @@ export default function GuestbookForm() {
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setPhone(formatPhoneNumber(e.target.value));
+    };
+
+    const handleCopyAccount = async () => {
+        try {
+            await navigator.clipboard.writeText(accountNumber.replace(/-/g, ""));
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch (err) {
+            console.error("복사 실패", err);
+        }
     };
 
     const handleSubmit = () => {
@@ -56,7 +69,7 @@ export default function GuestbookForm() {
                     <Label>고인과의 관계</Label>
                     <Input
                         type="text"
-                        placeholder="고인의 요양원 친구"
+                        placeholder="홍길동"
                         value={relation}
                         onChange={(e) => setRelation(e.target.value)}
                     />
@@ -74,7 +87,31 @@ export default function GuestbookForm() {
                     />
                 </FieldGroup>
 
-                <SubmitButton onClick={handleSubmit} disabled={!name.trim() || !relation.trim() || !phone.trim()}>
+                <Divider />
+
+                <AccountSection>
+                    <AccountTitle>조의를 전하고 싶은 분들께</AccountTitle>
+                    <AccountSubtitle>
+                        마음을 전하고 싶으신 분들을 위해 유족의 계좌를 안내드립니다.
+                    </AccountSubtitle>
+
+                    <AccountCard>
+                        <AccountInfo>
+                            <AccountBank>
+                                {bankName} {accountHolder}
+                            </AccountBank>
+                            <AccountNumber>{accountNumber}</AccountNumber>
+                        </AccountInfo>
+                        <CopyButton onClick={handleCopyAccount}>
+                            {copied ? "복사됨" : "복사"}
+                        </CopyButton>
+                    </AccountCard>
+                </AccountSection>
+
+                <SubmitButton
+                    onClick={handleSubmit}
+                    disabled={!name.trim() || !relation.trim() || !phone.trim()}
+                >
                     헌화하기 →
                 </SubmitButton>
             </Card>
@@ -96,7 +133,7 @@ const Card = styled.div`
   background: #FFFFFF;
   border-radius: 20px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
-  padding: 40px 44px 44px;
+  padding: 10px 44px 10px;
 `;
 
 const Title = styled.h1`
@@ -139,6 +176,77 @@ const Input = styled.input`
 
   &:focus {
     border-color: #C9A063;
+  }
+`;
+
+const Divider = styled.div`
+  height: 1px;
+  background: #ECE9E1;
+  margin: 8px 0 28px;
+`;
+
+const AccountSection = styled.div`
+  margin-bottom: 28px;
+  text-align: center;
+`;
+
+const AccountTitle = styled.h2`
+  font-size: 15.5px;
+  font-weight: bold;
+  color: #1A1A1A;
+  margin: 0 0 8px;
+`;
+
+const AccountSubtitle = styled.p`
+  font-size: 12.5px;
+  color: #9B968C;
+  line-height: 1.6;
+  margin: 0 0 18px;
+`;
+
+const AccountCard = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F7F6F2;
+  border: 1px solid #ECE9E1;
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: left;
+`;
+
+const AccountInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const AccountBank = styled.span`
+  font-size: 13.5px;
+  font-weight: bold;
+  color: #1A1A1A;
+`;
+
+const AccountNumber = styled.span`
+  font-size: 13px;
+  color: #6B6862;
+`;
+
+const CopyButton = styled.button`
+  flex-shrink: 0;
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #1A1A1A;
+  background: #FFFFFF;
+  border: 1px solid #E0DDD4;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #F0EEE8;
   }
 `;
 

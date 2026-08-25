@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" fill="none">
+  <g stroke="#594737" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+    <path d="M-70 742C120 666 252 686 392 748C515 803 650 826 796 784C924 746 1032 659 1167 648C1320 635 1430 721 1670 688" stroke-width="2.3" opacity=".13"/>
+    <path d="M-90 775C101 714 258 724 402 782C544 839 674 852 829 805C963 765 1051 700 1178 690C1331 679 1467 752 1685 721" stroke-width="1" opacity=".09"/>
+    <path d="M122 642C258 526 386 523 511 625C572 674 635 698 705 691" stroke-width="1.5" opacity=".1"/>
+    <path d="M850 684C961 545 1091 500 1253 585C1316 618 1378 636 1452 623" stroke-width="1.35" opacity=".09"/>
+    <path d="M-40 878C154 826 337 850 502 902C682 958 879 946 1026 891C1216 820 1382 829 1660 895" stroke-width="3.4" opacity=".075"/>
+
+    <path d="M142 832C166 758 176 672 165 580C157 510 167 450 202 403" stroke-width="4" opacity=".12"/>
+    <path d="M153 829C183 750 190 664 177 577C169 519 178 461 209 419" stroke-width="1.15" opacity=".16"/>
+    <path d="M180 607C132 572 89 558 43 566" stroke-width="2.2" opacity=".13"/>
+    <path d="M176 548C214 508 254 486 308 481" stroke-width="2.35" opacity=".13"/>
+    <path d="M185 501C153 466 122 447 83 442" stroke-width="1.9" opacity=".12"/>
+    <path d="M197 455C226 426 258 413 297 413" stroke-width="1.7" opacity=".1"/>
+
+    <g stroke-width="1" opacity=".14">
+      <path d="M147 583l-34-32m40 36l-17-43m23 47l4-46m4 51l23-42m-17 47l39-26"/>
+      <path d="M103 558l-28-20m37 23l-11-34m18 37l8-34m-2 37l26-27"/>
+      <path d="M203 519l5-42m3 40l24-38m-18 42l43-27m-35 35l48-8m-38 18l42 9"/>
+      <path d="M255 493l5-32m3 30l20-28m-12 31l34-17m-27 25l37-1"/>
+      <path d="M165 476l-29-28m35 29l-13-39m20 40l7-38m-1 40l26-31"/>
+      <path d="M225 436l7-30m2 28l18-25m-11 28l30-13m-24 19l32 2"/>
+    </g>
+
+    <path d="M1334 202C1397 234 1440 278 1464 336C1480 377 1514 405 1563 419" stroke-width="2.7" opacity=".07"/>
+    <path d="M1384 238C1427 227 1465 229 1501 249" stroke-width="1.4" opacity=".08"/>
+    <path d="M1423 279C1475 273 1515 286 1549 315" stroke-width="1.4" opacity=".08"/>
+    <g stroke-width=".9" opacity=".09">
+      <path d="M1399 236l-7-25m14 28l9-27m-3 31l25-23m-19 29l34-13"/>
+      <path d="M1461 282l3-30m5 31l18-25m-10 29l31-13m-25 20l34 3"/>
+    </g>
+
+    <path d="M1117 844c22-21 45-25 68-12 19 11 34 8 51-7" stroke-width="1.1" opacity=".09"/>
+    <path d="M1250 800c16-14 32-16 47-6 14 9 27 8 42-3" stroke-width="1" opacity=".08"/>
+  </g>
+</svg>

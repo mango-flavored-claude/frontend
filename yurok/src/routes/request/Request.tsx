@@ -1,0 +1,760 @@
+import React, { useState, ChangeEvent, FormEvent } from 'react';
+import styled, { createGlobalStyle } from 'styled-components';
+
+// ==========================================
+// 2. React Component implementation
+// ==========================================
+interface RequestProps {
+  onHomeClick?: () => void;
+  onSubmitComplete?: (data: RequestFormData) => void;
+  memberName?: string;
+}
+
+export interface RequestFormData {
+  deceasedName: string;
+  birthDate: string;
+  deathDate: string;
+  relation: string;
+  photo: File | null;
+  startDate: string;
+  endDate: string;
+  bankAccount: string;
+  greeting: string;
+  writers: string;
+  retention: string;
+}
+
+export default function Request({
+  onHomeClick,
+  onSubmitComplete,
+  memberName = 'FAMILY MEMBER',
+}: RequestProps) {
+  const [step, setStep] = useState<number>(1);
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [formData, setFormData] = useState<RequestFormData>({
+    deceasedName: '',
+    birthDate: '',
+    deathDate: '',
+    relation: '배우자',
+    photo: null,
+    startDate: '',
+    endDate: '',
+    bankAccount: '',
+    greeting: '직접 모시지 못하는 마음을 담아 온라인 추모 공간을 마련했습니다.',
+    writers: '50명',
+    retention: '1년',
+  });
+
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData((prev) => ({ ...prev, photo: e.target.files![0] }));
+    }
+  };
+
+  const handleNext = () => {
+    setStep((prev) => Math.min(prev + 1, 3));
+  };
+
+  const handlePrev = () => {
+    setStep((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setIsSubmitted(true);
+    if (onSubmitComplete) {
+      onSubmitComplete(formData);
+    } else {
+      console.log('Application Submitted:', formData);
+    }
+  };
+
+  return (
+    <>
+      {!isSubmitted ? (
+        <FlowPage id="application">
+
+          <FlowBody>
+            <ApplicationShell>
+              <ApplySidebar>
+                <h2>온라인 빈소 신청</h2>
+                <SideStep $active={step === 1} onClick={() => setStep(1)}>
+                  고인 정보
+                </SideStep>
+                <SideStep $active={step === 2} onClick={() => setStep(2)}>
+                  장례 일정
+                </SideStep>
+                <SideStep $active={step === 3} onClick={() => setStep(3)}>
+                  요금제 선택
+                </SideStep>
+              </ApplySidebar>
+
+              <ApplyCard>
+                {/* STEP 01: 고인 정보 */}
+                {step === 1 && (
+                  <ApplicationPane>
+                    <Eyebrow>STEP 01</Eyebrow>
+                    <h1>
+                      고인 정보를
+                      <br />
+                      입력해주세요.
+                    </h1>
+                    <p>입력한 정보는 초대장과 온라인 빈소에 표시됩니다.</p>
+
+                    <FormGroup>
+                      <Field>
+                        <span>고인 성함</span>
+                        <input
+                          id="deceased-name"
+                          name="deceasedName"
+                          placeholder="예: 김유록"
+                          value={formData.deceasedName}
+                          onChange={handleInputChange}
+                        />
+                      </Field>
+
+                      <TwoFields>
+                        <Field>
+                          <span>생년월일</span>
+                          <input
+                            type="date"
+                            name="birthDate"
+                            value={formData.birthDate}
+                            onChange={handleInputChange}
+                          />
+                        </Field>
+                        <Field>
+                          <span>별세일</span>
+                          <input
+                            type="date"
+                            name="deathDate"
+                            value={formData.deathDate}
+                            onChange={handleInputChange}
+                          />
+                        </Field>
+                      </TwoFields>
+
+                      <Field>
+                        <span>신청자와의 관계</span>
+                        <select
+                          name="relation"
+                          value={formData.relation}
+                          onChange={handleInputChange}
+                        >
+                          <option value="배우자">배우자</option>
+                          <option value="자녀">자녀</option>
+                          <option value="형제·자매">형제·자매</option>
+                          <option value="기타 가족">기타 가족</option>
+                        </select>
+                      </Field>
+
+                      <Field>
+                        <span>영정사진</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                        />
+                      </Field>
+                    </FormGroup>
+
+                    <FormActions>
+                      <span />
+                      <NextButton type="button" onClick={handleNext}>
+                        다음 단계
+                      </NextButton>
+                    </FormActions>
+                  </ApplicationPane>
+                )}
+
+                {/* STEP 02: 장례 일정 */}
+                {step === 2 && (
+                  <ApplicationPane>
+                    <Eyebrow>STEP 02</Eyebrow>
+                    <h1>
+                      온라인 장례 기간을
+                      <br />
+                      설정해주세요.
+                    </h1>
+                    <p>빈소는 종료 시각까지 운영되고 이후 추억관으로 전환됩니다.</p>
+
+                    <FormGroup>
+                      <TwoFields>
+                        <Field>
+                          <span>시작 일시</span>
+                          <input
+                            type="datetime-local"
+                            name="startDate"
+                            value={formData.startDate}
+                            onChange={handleInputChange}
+                          />
+                        </Field>
+                        <Field>
+                          <span>종료 일시</span>
+                          <input
+                            type="datetime-local"
+                            name="endDate"
+                            value={formData.endDate}
+                            onChange={handleInputChange}
+                          />
+                        </Field>
+                      </TwoFields>
+
+                      <Field>
+                        <span>마음 전하실 계좌</span>
+                        <input
+                          name="bankAccount"
+                          placeholder="은행명 / 계좌번호 / 예금주"
+                          value={formData.bankAccount}
+                          onChange={handleInputChange}
+                        />
+                      </Field>
+
+                      <Field>
+                        <span>초대장 인사말</span>
+                        <textarea
+                          name="greeting"
+                          value={formData.greeting}
+                          onChange={handleInputChange}
+                        />
+                      </Field>
+                    </FormGroup>
+
+                    <FormActions>
+                      <PrevButton type="button" onClick={handlePrev}>
+                        이전
+                      </PrevButton>
+                      <NextButton type="button" onClick={handleNext}>
+                        다음 단계
+                      </NextButton>
+                    </FormActions>
+                  </ApplicationPane>
+                )}
+
+                {/* STEP 03: 요금제 선택 */}
+                {step === 3 && (
+                  <ApplicationPane>
+                    <Eyebrow>STEP 03</Eyebrow>
+                    <h1>
+                      글쓰기 인원과
+                      <br />
+                      보관기간을 선택해주세요.
+                    </h1>
+                    <p>열람 인원은 모든 요금제에서 제한하지 않습니다.</p>
+
+                    <ChoiceTitle>글쓰기 인원</ChoiceTitle>
+                    <ChoiceGrid>
+                      {[
+                        { code: 'SMALL', count: '50명' },
+                        { code: 'STANDARD', count: '200명' },
+                        { code: 'LARGE', count: '500명' },
+                      ].map((item) => (
+                        <ChoiceLabel
+                          key={item.count}
+                          $checked={formData.writers === item.count}
+                        >
+                          <input
+                            type="radio"
+                            name="writers"
+                            value={item.count}
+                            checked={formData.writers === item.count}
+                            onChange={handleInputChange}
+                          />
+                          <span>{item.code}</span>
+                          <strong>{item.count}</strong>
+                        </ChoiceLabel>
+                      ))}
+                    </ChoiceGrid>
+
+                    <ChoiceTitle>추억관 공개 보관기간</ChoiceTitle>
+                    <ChoiceGrid>
+                      {[
+                        { code: 'BASIC', period: '1년' },
+                        { code: 'LONG', period: '5년' },
+                        { code: 'ARCHIVE', period: '10년' },
+                      ].map((item) => (
+                        <ChoiceLabel
+                          key={item.period}
+                          $checked={formData.retention === item.period}
+                        >
+                          <input
+                            type="radio"
+                            name="retention"
+                            value={item.period}
+                            checked={formData.retention === item.period}
+                            onChange={handleInputChange}
+                          />
+                          <span>{item.code}</span>
+                          <strong>{item.period}</strong>
+                        </ChoiceLabel>
+                      ))}
+                    </ChoiceGrid>
+
+                    <PricePending>
+                      선택 요금의 결제 금액은 가격 정책 확정 후 표시됩니다.
+                    </PricePending>
+
+                    <FormActions>
+                      <PrevButton type="button" onClick={handlePrev}>
+                        이전
+                      </PrevButton>
+                      <NextButton type="button" onClick={handleSubmit}>
+                        신청 내용 확인
+                      </NextButton>
+                    </FormActions>
+                  </ApplicationPane>
+                )}
+              </ApplyCard>
+            </ApplicationShell>
+          </FlowBody>
+        </FlowPage>
+      ) : (
+        /* 완료 화면 */
+        <FlowPage id="complete">
+
+          <FlowBody>
+            <CompleteCard>
+              <CompleteMark>✓</CompleteMark>
+              <Eyebrow>APPLICATION READY</Eyebrow>
+              <CompleteTitle>
+                온라인 빈소 신청 내용을
+                <br />
+                확인했습니다.
+              </CompleteTitle>
+              <CompleteDescription>
+                아래 내용으로 신청을 진행합니다. 이 화면은 결제 전 프로토타입입니다.
+              </CompleteDescription>
+
+              <SummaryTable>
+                <div>
+                  <span>고인 성함</span>
+                  <strong>{formData.deceasedName || '미입력'}</strong>
+                </div>
+                <div>
+                  <span>글쓰기 인원</span>
+                  <strong>{formData.writers}</strong>
+                </div>
+                <div>
+                  <span>공개 보관기간</span>
+                  <strong>{formData.retention}</strong>
+                </div>
+                <div>
+                  <span>결제 금액</span>
+                  <strong>추후 확정</strong>
+                </div>
+              </SummaryTable>
+
+              <PrimaryButton type="button" onClick={onHomeClick}>
+                홈으로 돌아가기
+              </PrimaryButton>
+            </CompleteCard>
+          </FlowBody>
+        </FlowPage>
+      )}
+    </>
+  );
+}
+
+// ==========================================
+// 3. Styled Components (하단배치 & 세미콜론 후 줄바꿈)
+// ==========================================
+
+const FlowPage = styled.section`
+  background-color: #eee9df;
+  background-image: radial-gradient(#cbc3b7 0.7px, transparent 0.7px);
+  background-size: 6px 6px;
+`;
+
+const FlowHeader = styled.header`
+  height: 78px;
+  padding: 0 6.5vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #c5bbad;
+  background: rgba(255, 253, 249, 0.96);
+  box-shadow: 0 8px 30px rgba(56, 43, 33, 0.035);
+
+  @media (max-width: 940px) {
+    padding-inline: 28px;
+  }
+`;
+
+const BackButton = styled.button`
+  border: 0;
+  color: #61584e;
+  background: transparent;
+  font-size: 11px;
+`;
+
+const BrandButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 0;
+  color: var(--ink);
+  background: transparent;
+
+  strong {
+    font-family: "Batang", serif;
+    font-size: 18px;
+    letter-spacing: 0.13em;
+  }
+`;
+
+const BrandMark = styled.span`
+  width: auto;
+  height: auto;
+  border: 0;
+  color: #402f24;
+  font: 600 21px/1 "Batang", serif;
+  letter-spacing: -0.1em;
+
+  &::after {
+    content: "";
+    display: inline-block;
+    width: 1px;
+    height: 25px;
+    margin-left: 13px;
+    vertical-align: middle;
+    background: #cfc5b8;
+  }
+`;
+
+const FlowStep = styled.span`
+  color: #7a7065;
+  font: 9px monospace;
+`;
+
+const FlowBody = styled.div`
+  min-height: calc(100vh - 78px);
+  display: grid;
+  place-items: center;
+  padding: 55px;
+`;
+
+const ApplicationShell = styled.div`
+  width: min(980px, 84vw);
+  display: grid;
+  grid-template-columns: 245px 1fr;
+  border: 1px solid #b6aa9d;
+  background: #fffdfa;
+  box-shadow: 0 25px 70px rgba(66, 49, 37, 0.13);
+
+  @media (max-width: 940px) {
+    width: calc(100vw - 48px);
+    grid-template-columns: 210px 1fr;
+  }
+`;
+
+const ApplySidebar = styled.aside`
+  padding: 42px 28px;
+  color: #e9e1d6;
+  background: linear-gradient(180deg, #46352a, #30251e);
+
+  h2 {
+    margin: 0 0 35px;
+    font: 400 20px "Batang", serif;
+  }
+`;
+
+interface SideStepProps {
+  $active?: boolean;
+}
+
+const SideStep = styled.div<SideStepProps>`
+  position: relative;
+  padding: 0 0 28px 25px;
+  color: ${(props) => (props.$active ? 'white' : '#94877c')};
+  font-size: 10px;
+  font-weight: ${(props) => (props.$active ? '700' : 'normal')};
+  cursor: pointer;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 13px;
+    width: 7px;
+    height: 7px;
+    border: 1px solid #a99c90;
+    border-radius: 50%;
+    background: ${(props) => (props.$active ? '#ded0bf' : 'transparent')};
+    box-shadow: ${(props) =>
+      props.$active ? '0 0 0 3px rgba(222,208,191,.17)' : 'none'};
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 34px;
+    bottom: 4px;
+    border-left: 1px solid #69584b;
+  }
+
+  &:last-child::after {
+    display: none;
+  }
+`;
+
+const ApplyCard = styled.div`
+  width: auto;
+  padding: 52px;
+  border: 0;
+  box-shadow: none;
+
+  @media (max-width: 940px) {
+    padding: 40px;
+  }
+`;
+
+const ApplicationPane = styled.section`
+  display: block;
+
+  h1 {
+    margin: 0 0 10px;
+    font: 400 31px/1.45 "Batang", serif;
+    letter-spacing: -0.04em;
+  }
+
+  p:not(.eyebrow) {
+    margin: 0 0 30px;
+    color: #756c62;
+    font-size: 11px;
+    line-height: 1.7;
+  }
+`;
+
+const Eyebrow = styled.p`
+  margin: 0 0 12px;
+  color: #7b6e61;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+`;
+
+const FormGroup = styled.div`
+  display: grid;
+  gap: 16px;
+`;
+
+const Field = styled.label`
+  display: grid;
+  gap: 7px;
+
+  span {
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 0 12px;
+    border: 1px solid #c3b9ae;
+    background: #fff;
+    outline: none;
+
+    &:focus {
+      border-color: var(--brown);
+      box-shadow: 0 0 0 2px #e9ded1;
+    }
+  }
+
+  input, select {
+    height: 44px;
+  }
+
+  textarea {
+    height: 100px;
+    padding-top: 12px;
+    resize: none;
+  }
+`;
+
+const TwoFields = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+`;
+
+const FormActions = styled.div`
+  margin-top: 26px;
+  display: flex;
+  justify-content: space-between;
+
+  button {
+    height: 44px;
+    padding: 0 18px;
+  }
+`;
+
+const PrevButton = styled.button`
+  border: 1px solid #a69c90;
+  background: white;
+`;
+
+const NextButton = styled.button`
+  border: 1px solid #463226;
+  color: white;
+  background: #463226;
+  font-weight: 700;
+  transition: background 0.18s ease, transform 0.18s ease;
+
+  &:hover {
+    background: #2f221b;
+    transform: translateY(-1px);
+  }
+`;
+
+const ChoiceTitle = styled.p`
+  margin: 23px 0 10px;
+  font-size: 10px;
+  font-weight: 700;
+`;
+
+const ChoiceGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+`;
+
+interface ChoiceLabelProps {
+  $checked?: boolean;
+}
+
+const ChoiceLabel = styled.label<ChoiceLabelProps>`
+  position: relative;
+  padding: 19px 9px;
+  border: ${(props) =>
+    props.$checked ? '1px solid #634632' : '1px solid #c7bcb0'};
+  box-shadow: ${(props) =>
+    props.$checked ? 'inset 0 0 0 1px #634632' : 'none'};
+  background: ${(props) => (props.$checked ? '#f2e8dc' : '#fff')};
+  color: ${(props) => (props.$checked ? 'var(--brown)' : 'inherit')};
+  text-align: center;
+  cursor: pointer;
+  transition: 0.17s ease;
+
+  &:hover {
+    border-color: #8a715d;
+    background: ${(props) => (props.$checked ? '#f2e8dc' : '#faf5ee')};
+  }
+
+  input {
+    position: absolute;
+    opacity: 0;
+  }
+
+  span {
+    display: block;
+    color: #776e64;
+    font-size: 9px;
+  }
+
+  strong {
+    display: block;
+    margin-top: 5px;
+    font: 400 18px "Batang", serif;
+  }
+`;
+
+const PricePending = styled.div`
+  margin-top: 17px;
+  padding: 13px;
+  border: 1px dashed #a99d90;
+  color: #756a5e;
+  background: #f6f1ea;
+  font-size: 10px;
+  text-align: center;
+`;
+
+const CompleteCard = styled.div`
+  width: min(540px, 90%);
+  margin: 0 auto;
+  padding: 48px;
+  border: 1px solid #b6aa9d;
+  background: #fffdfa;
+  box-shadow: 0 25px 70px rgba(66, 49, 37, 0.13);
+  text-align: center;
+
+  @media (max-width: 940px) {
+    padding: 36px 24px;
+  }
+`;
+
+const CompleteMark = styled.div`
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  color: var(--white);
+  background: #463226;
+  font-size: 20px;
+`;
+
+const CompleteTitle = styled.h1`
+  margin: 0 0 12px;
+  font: 400 28px/1.4 "Batang", serif;
+  letter-spacing: -0.03em;
+`;
+
+const CompleteDescription = styled.p`
+  margin: 0 0 28px;
+  color: #756c62;
+  font-size: 11px;
+  line-height: 1.6;
+`;
+
+const SummaryTable = styled.div`
+  margin-bottom: 32px;
+  border-top: 1px solid #c9c0b2;
+  border-bottom: 1px solid #c9c0b2;
+  background: #f9f6f0;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px dashed #ded7cb;
+    font-size: 11px;
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+
+  span {
+    color: #756c62;
+  }
+
+  strong {
+    color: var(--ink);
+    font-weight: 700;
+  }
+`;
+
+const PrimaryButton = styled.button`
+  width: 100%;
+  height: 46px;
+  border: 1px solid #463226;
+  color: var(--white);
+  background: #463226;
+  font-weight: 700;
+  transition: background 0.18s ease, transform 0.18s ease;
+
+  &:hover {
+    background: #2f221b;
+    transform: translateY(-1px);
+  }
+`;
