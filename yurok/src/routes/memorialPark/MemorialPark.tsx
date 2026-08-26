@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createGlobalStyle } from 'styled-components';
 import * as S from './OnlineAltar.styled.ts';
 import { publicAsset } from '../../utils/publicAsset';
 import { useInviteToken } from '../../hooks/useInviteToken.ts';
@@ -83,6 +84,18 @@ const buildFlowerPositions = (): Array<[number, number, number, number]> => {
 
 const POSITIONS = buildFlowerPositions();
 
+// 스크롤 자체는 그대로 되게 두고, 브라우저 스크롤바만 안 보이게 함.
+// 이 컴포넌트가 마운트돼있는 동안만 적용되고, 페이지 떠나면 자동으로 해제됨.
+const HideScrollbarStyle = createGlobalStyle`
+  html, body {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE, Edge */
+  }
+  html::-webkit-scrollbar, body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+`;
+
 export default function MemorialPark() {
   const key = useInviteToken();
   const API_BASE = "https://d2qa5spsddshr5.cloudfront.net";
@@ -106,6 +119,7 @@ export default function MemorialPark() {
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [memories, setMemories] = useState<MemoryListItem[]>([]);
   const [selectedDetail, setSelectedDetail] = useState<MemoryItem | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showPageTransition, setShowPageTransition] = useState(false);
@@ -195,6 +209,7 @@ export default function MemorialPark() {
     }
 
     setIsDetailLoading(true);
+    setDetailError(null);
 
     try {
       const res = await fetch(
@@ -203,7 +218,7 @@ export default function MemorialPark() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        alert(data.message || '비공개로 남겨진 추억이라 볼 수 없어요.');
+        setDetailError(data.message || '비공개로 남겨진 추억이라 볼 수 없어요.');
         return;
       }
 
@@ -216,7 +231,7 @@ export default function MemorialPark() {
         imageUrl: detail.photoUrls[0] ?? item.generatedImageUrl,
       });
     } catch {
-      alert('서버 통신 중 오류가 발생했습니다.');
+      setDetailError('서버 통신 중 오류가 발생했습니다.');
     } finally {
       setIsDetailLoading(false);
     }
@@ -304,15 +319,20 @@ export default function MemorialPark() {
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
 
-    previewUrls.forEach((url) => URL.revokeObjectURL(url));
-
-    const files = Array.from(e.target.files).slice(0, 3);
-    const newUrls = files.map((file) => URL.createObjectURL(file));
-
-    setSelectedFiles(files);
-    setPreviewUrls(newUrls);
-    setSelectedPhotoIndex(0);
+    // "+" 버튼을 여러 번 눌러 한 장씩 추가해도 기존에 고른 사진이 안 사라지도록,
+    // 새로 고른 파일을 기존 목록 뒤에 이어 붙임(최대 3장)
+    const newFiles = Array.from(e.target.files);
+    setSelectedFiles((prev) => [...prev, ...newFiles].slice(0, 3));
+    e.target.value = ''; // 같은 파일을 다시 선택할 수 있도록 초기화
   };
+
+  // selectedFiles가 바뀔 때마다 미리보기용 objectURL을 새로 만들고, 이전 것은 정리함
+  useEffect(() => {
+    const urls = selectedFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+    setSelectedPhotoIndex(0);
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [selectedFiles]);
 
   // 추억 작성 팝업을 열기 전에 확인: 조문객 정보가 있어야 하고, 1인 1회 제한도 넘으면 안 됨
   const handleOpenComposer = () => {
@@ -378,9 +398,7 @@ export default function MemorialPark() {
         markMemoryWritten(visitor.visitorId);
         setMemoryText('');
         setVisibility('PUBLIC');
-        setSelectedFiles([]);
-        setPreviewUrls([]);
-        setSelectedPhotoIndex(0);
+        setSelectedFiles([]); // previewUrls/selectedPhotoIndex는 selectedFiles effect가 알아서 초기화함
         setIsComposerOpen(false);
       } else {
         alert(data.message || '추념글 등록에 실패했습니다.');
@@ -400,6 +418,7 @@ export default function MemorialPark() {
 
   return (
     <S.Container $isPageTransitioning={isTransitioning} onWheel={handleWheel}>
+      <HideScrollbarStyle />
       <S.AltarSection ref={altarRef}>
         <S.SceneStage>
           <S.AltarArtboard>
@@ -490,12 +509,13 @@ export default function MemorialPark() {
                     src={item.generatedImageUrl}
                     alt=""
                     style={{
-                      position: 'relative',
-                      zIndex: 1,
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
-                      borderRadius: '50%',
+                      // 딱 잘린 원형/사각 테두리 대신, 가장자리가 넓게 부드럽게 사라지는 수채화 느낌으로
+                      WebkitMaskImage:
+                        'radial-gradient(circle, black 25%, transparent 70%)',
+                      maskImage: 'radial-gradient(circle, black 25%, transparent 70%)',
                     }}
                   />
                 )}
@@ -566,7 +586,7 @@ export default function MemorialPark() {
                   }}
                   disabled={!hasPhoto}
                 >
-                  <span>{hasPhoto ? `사진 ${idx + 1}` : '빈 공간'}</span>
+                  <span>{hasPhoto ? `사진 ${idx + 1}` : ''}</span>
                 </S.PhotoChoice>
               );
             })}
@@ -609,30 +629,44 @@ export default function MemorialPark() {
       </S.Modal>
 
       {/* 상세 보기 모달 */}
-      <S.Modal $isOpen={!!selectedDetail}>
+      <S.Modal $isOpen={!!(selectedDetail || detailError)}>
         <S.ModalCard>
-          <S.ModalClose type="button" onClick={() => setSelectedDetail(null)}>
+          <S.ModalClose
+            type="button"
+            onClick={() => {
+              setSelectedDetail(null);
+              setDetailError(null);
+            }}
+          >
             ×
           </S.ModalClose>
           <p className="eyebrow">추념 기록</p>
-          {selectedDetail?.imageUrl && (
-            <img
-              src={selectedDetail.imageUrl}
-              alt={`${selectedDetail.author}님이 남긴 사진`}
-              style={{
-                width: '100%',
-                aspectRatio: '1 / 1',
-                objectFit: 'cover',
-                borderRadius: 14,
-                display: 'block',
-                marginBottom: 20,
-              }}
-            />
+          {detailError ? (
+            <S.DetailText>{detailError}</S.DetailText>
+          ) : (
+            <>
+              {selectedDetail?.imageUrl && (
+                <img
+                  src={selectedDetail.imageUrl}
+                  alt={`${selectedDetail.author}님이 남긴 사진`}
+                  style={{
+                    width: '100%',
+                    aspectRatio: '1 / 1',
+                    objectFit: 'cover',
+                    display: 'block',
+                    marginBottom: 20,
+                    // 딱 잘린 사각 테두리 대신, 가장자리가 넓게 부드럽게 사라지는 수채화 느낌으로
+                    WebkitMaskImage: 'radial-gradient(circle, black 25%, transparent 70%)',
+                    maskImage: 'radial-gradient(circle, black 25%, transparent 70%)',
+                  }}
+                />
+              )}
+              <S.DetailText>{selectedDetail?.text}</S.DetailText>
+              <S.DetailAuthor>
+                {selectedDetail?.author} · {selectedDetail?.relation}
+              </S.DetailAuthor>
+            </>
           )}
-          <S.DetailText>{selectedDetail?.text}</S.DetailText>
-          <S.DetailAuthor>
-            {selectedDetail?.author} · {selectedDetail?.relation}
-          </S.DetailAuthor>
         </S.ModalCard>
       </S.Modal>
 

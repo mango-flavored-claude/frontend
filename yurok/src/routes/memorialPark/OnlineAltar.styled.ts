@@ -550,28 +550,10 @@ export const MemoryPlaceholder = styled.div`
   align-self: center;
   justify-self: center;
   overflow: hidden;
-  border: 0;
-  border-radius: 50%;
   color: transparent;
-  background: radial-gradient(
-    circle at 47% 43%,
-    rgba(93, 93, 91, 0.21) 0 55%,
-    rgba(93, 93, 91, 0.13) 68%,
-    rgba(93, 93, 91, 0.035) 79%,
-    transparent 84%
-  );
-  filter: blur(0.35px) saturate(0.55);
-  mix-blend-mode: multiply;
-  opacity: 0.72;
-  transition: opacity 0.35s ease, filter 0.35s ease, transform 0.45s ease;
 
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 13%;
-    border-radius: 50%;
-    background: rgba(119, 116, 110, 0.08);
-    filter: blur(18px);
+  img {
+    transition: transform 0.45s ease;
   }
 
   .memory-index,
@@ -580,14 +562,8 @@ export const MemoryPlaceholder = styled.div`
     display: none;
   }
 
-  ${MemoryCard}:hover & {
-    opacity: 0.88;
-    filter: blur(0) saturate(0.62);
-    transform: scale(1.012);
-  }
-
-  ${MemoryCard}:nth-child(even) & {
-    opacity: 0.62;
+  ${MemoryCard}:hover & img {
+    transform: scale(1.04);
   }
 `;
 
@@ -656,8 +632,10 @@ export const Modal = styled.div<{ $isOpen: boolean }>`
 
 export const ModalCard = styled.article`
   position: relative;
-  width: 590px;
-  padding: 48px;
+  width: 440px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  padding: 36px;
   border: 1px solid #796b60;
   background-color: #f8f4ec;
   background-image: linear-gradient(90deg, rgba(98, 80, 63, 0.025) 1px, transparent 1px),
@@ -672,8 +650,8 @@ export const ModalCard = styled.article`
     letter-spacing: 0.2em;
   }
   h3 {
-    margin: 0 0 28px;
-    font: 400 28px/1.5 "Batang", serif;
+    margin: 0 0 20px;
+    font: 400 24px/1.5 "Batang", serif;
   }
 `;
 
@@ -744,7 +722,8 @@ export const ModalClose = styled.button`
 export const PhotoRow = styled.div`
   margin: -8px 0 4px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  gap: 10px;
   min-height: 102px;
   padding-left: 4px;
 
@@ -757,21 +736,14 @@ export const PhotoChoice = styled.button<{ $isSelected: boolean; $bgImage?: stri
   position: relative;
   width: 104px;
   height: 78px;
-  margin-right: -9px;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 2px solid transparent;
+  border: none;
   color: #83776c;
-  background: radial-gradient(
-    circle at 46% 42%,
-    rgba(112, 108, 103, 0.25),
-    rgba(112, 108, 103, 0.12) 63%,
-    transparent 72%
-  );
+  background: #f2ede4;
   background-position: center;
   background-size: cover;
-  box-shadow: 0 7px 15px rgba(69, 51, 37, 0.07);
   font-size: 9px;
   transition: 0.22s ease;
 
@@ -784,21 +756,10 @@ export const PhotoChoice = styled.button<{ $isSelected: boolean; $bgImage?: stri
       }
     `}
 
-  &:nth-child(1) {
-    transform: rotate(-2.5deg);
-  }
-  &:nth-child(2) {
-    transform: translateY(4px) rotate(1.5deg);
-  }
-  &:nth-child(3) {
-    transform: rotate(-0.8deg);
-  }
-
   ${({ $isSelected }) =>
     $isSelected &&
     css`
       z-index: 3;
-      border-color: #513b2e;
       box-shadow: 0 0 0 2px rgba(238, 229, 213, 0.85), 0 8px 18px rgba(69, 51, 37, 0.13);
     `}
 `;
@@ -806,7 +767,7 @@ export const PhotoChoice = styled.button<{ $isSelected: boolean; $bgImage?: stri
 export const PhotoAdd = styled.label`
   width: 74px;
   height: 58px;
-  margin: 0 0 4px 21px;
+  margin: 0 0 4px;
   display: grid;
   place-items: center;
   border: 0;
