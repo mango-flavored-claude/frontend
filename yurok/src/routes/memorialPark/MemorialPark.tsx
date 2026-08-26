@@ -124,6 +124,13 @@ export default function MemorialPark() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showPageTransition, setShowPageTransition] = useState(false);
 
+  // 국화가 놓인 뒤 5초간 화면 전환이 없으면 다시 어두워지며 이동을 안내함
+  const [showIdlePrompt, setShowIdlePrompt] = useState(false);
+  const idleTimerRef = useRef<number | null>(null);
+
+  // 추념 공간(추억관)에 처음 도착했을 때 한 번 어두워졌다 밝아지는 연출
+  const [showMemoryIntro, setShowMemoryIntro] = useState(false);
+
   // 추념글 작성 폼 상태
   const [memoryText, setMemoryText] = useState('');
   const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
@@ -177,25 +184,40 @@ export default function MemorialPark() {
   }, [key, API_BASE]);
 
   // 추억 목록 조회: GET /api/memorials/{inviteToken}/memories
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/memorials/${key}/memories`);
-        const data = await res.json();
-        if (!cancelled && res.ok && data.success && Array.isArray(data.result)) {
-          setMemories(data.result);
-        }
-      } catch {
-        // 실패해도 추억관 그리드가 비어있게 두면 되니 별도 에러 처리 없음
+  const fetchMemories = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/memorials/${key}/memories`);
+      const data = await res.json();
+      if (res.ok && data.success && Array.isArray(data.result)) {
+        setMemories(data.result);
       }
-    })();
+    } catch {
+      // 실패해도 추억관 그리드가 비어있게 두면 되니 별도 에러 처리 없음
+    }
+  };
+
+  useEffect(() => {
+    fetchMemories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, API_BASE]);
+
+  // 영정 화면: 국화 생성 애니메이션이 끝난 뒤에도 5초간 화면 전환이 없으면,
+  // 다시 어두워지며 추념 공간으로 이동하라는 안내 문구를 띄움
+  useEffect(() => {
+    const FLOWER_REVEAL_MS = 14100; // 국화 애니메이션 지연(12s) + 재생 시간(2.1s)과 맞춤
+    const IDLE_WAIT_MS = 5000;
+
+    const revealTimer = window.setTimeout(() => {
+      idleTimerRef.current = window.setTimeout(() => {
+        setShowIdlePrompt(true);
+      }, IDLE_WAIT_MS);
+    }, FLOWER_REVEAL_MS);
 
     return () => {
-      cancelled = true;
+      window.clearTimeout(revealTimer);
+      if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
     };
-  }, [key, API_BASE]);
+  }, []);
 
   // 추억 상세 조회: GET /api/memorials/{inviteToken}/memories/{memoryId}?visitorId=...
   // PRIVATE 추억은 작성자 본인만 조회 가능 — 서버가 visitorId로 판단함
@@ -285,11 +307,23 @@ export default function MemorialPark() {
 
   const moveToSection = (targetRef: React.RefObject<HTMLElement | null>) => {
     if (isTransitioning || !targetRef.current) return;
+
+    // 사용자가 화면을 전환했으니, 영정 화면의 "이동 안내" 타이머/오버레이는 취소
+    if (idleTimerRef.current) {
+      window.clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+    setShowIdlePrompt(false);
+
     setIsTransitioning(true);
     setShowPageTransition(true);
 
     setTimeout(() => {
       window.scrollTo(0, targetRef.current?.offsetTop || 0);
+      // 추념 공간에 도착하면 한 번 어두워졌다 밝아지며 안내 문구를 보여줌
+      if (targetRef === memoryRef) {
+        setShowMemoryIntro(true);
+      }
     }, 420);
 
     setTimeout(() => {
@@ -400,6 +434,8 @@ export default function MemorialPark() {
         setVisibility('PUBLIC');
         setSelectedFiles([]); // previewUrls/selectedPhotoIndex는 selectedFiles effect가 알아서 초기화함
         setIsComposerOpen(false);
+        // 추념하기 후 목록 화면으로 돌아왔을 때 방금 남긴 추념글이 보이도록 목록을 새로고침
+        fetchMemories();
       } else {
         alert(data.message || '추념글 등록에 실패했습니다.');
       }
@@ -455,7 +491,7 @@ export default function MemorialPark() {
           <S.EntranceDimmer aria-hidden="true" />
           <S.FuneralGuidance
             role="status"
-            aria-label={`빈소 안내. 이곳은 고 ${deceasedName}님의 온라인 빈소입니다. 잠시 마음을 가다듬으시고, 고인의 평안한 안식을 기원해 주시기 바랍니다.`}
+            aria-label={`빈소 안내. 이곳은 고 ${deceasedName}님의 온라인 빈소입니다. 잠시 마음을 가다듬으시고, 고인의 평안한 안식을 기원해 주시기 바랍니다. 마음과 함께 국화가 놓였습니다.`}
           >
             <p className="guidance-line" aria-hidden="true">
               이곳은 故 {deceasedName}님의 온라인 빈소입니다.
@@ -466,8 +502,20 @@ export default function MemorialPark() {
             <p className="guidance-line" aria-hidden="true">
               고인의 평안한 안식을 기원해 주시기 바랍니다.
             </p>
+            <p className="guidance-line" aria-hidden="true">
+              마음과 함께 국화가 놓였습니다.
+            </p>
           </S.FuneralGuidance>
-          <S.CompleteToast>마음과 함께 국화가 놓였습니다.</S.CompleteToast>
+          {showIdlePrompt && (
+            <>
+              <S.IdlePromptDimmer aria-hidden="true" />
+              <S.IdlePromptText role="status">
+                고인과 마지막 인사를 모두 나누셨다면,
+                <br />
+                아래의 추념 공간으로 이동해주세요.
+              </S.IdlePromptText>
+            </>
+          )}
         </S.SceneStage>
         <S.ScrollButton onClick={() => moveToSection(memoryRef)}>
           <strong>고인과의 추억 이어보기</strong>
@@ -476,6 +524,20 @@ export default function MemorialPark() {
       </S.AltarSection>
 
       <S.MemorySection ref={memoryRef}>
+        {showMemoryIntro && (
+          <S.MemoryIntroOverlay
+            $isRun
+            role="status"
+            aria-label="이곳은 추념 공간이므로, 추념 메시지를 남겨주세요."
+            onAnimationEnd={() => setShowMemoryIntro(false)}
+          >
+            <p aria-hidden="true">
+              이곳은 추념 공간이므로,
+              <br />
+              추념 메시지를 남겨주세요.
+            </p>
+          </S.MemoryIntroOverlay>
+        )}
         <S.MemoryHeading>
           <S.MemoryTitleWrap>
             <S.MemoryMark>記</S.MemoryMark>
