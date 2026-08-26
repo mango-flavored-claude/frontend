@@ -35,7 +35,7 @@ export default function GuestbookForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [account, setAccount] = useState<MemorialAccount | null>(null);
 
-    const navigator = useNavigate();
+    const navigate = useNavigate();
 
     useEffect(() => {
         let cancelled = false;
@@ -77,9 +77,9 @@ export default function GuestbookForm() {
     const handleCopyAccount = async () => {
         if (!account) return;
         try {
-            // await navigator.clipboard.writeText(account.accountNumber.replace(/-/g, ""));
-            // setCopied(true);
-            // setTimeout(() => setCopied(false), 1500);
+            await navigator.clipboard.writeText(account.accountNumber.replace(/-/g, ""));
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
         } catch (err) {
             console.error("복사 실패", err);
         }
@@ -113,7 +113,7 @@ export default function GuestbookForm() {
             // 추억 작성 등에서 다시 써야 하므로 visitorId를 저장해둠
             saveVisitor(data.result);
 
-            navigator(`/park/${key}`);
+            navigate(`/park/${key}`);
         } catch {
             setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
         } finally {

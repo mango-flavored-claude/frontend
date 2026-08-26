@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as S from './OnlineAltar.styled.ts';
 import { publicAsset } from '../../utils/publicAsset';
 import { useInviteToken } from '../../hooks/useInviteToken.ts';
+import { getVisitor, hasWrittenMemory, markMemoryWritten } from '../../utils/visitorStorage';
 
 interface MemorialHome {
   deceasedName: string;
@@ -232,9 +233,32 @@ export default function MemorialPark() {
     setSelectedPhotoIndex(0);
   };
 
+  // 추억 작성 팝업을 열기 전에 확인: 조문객 정보가 있어야 하고, 1인 1회 제한도 넘으면 안 됨
+  const handleOpenComposer = () => {
+    if (hasWrittenMemory()) {
+      alert('추억은 한 분당 한 번만 남기실 수 있어요. 이미 소중한 기억을 남겨주셨습니다.');
+      return;
+    }
+    if (!getVisitor()) {
+      alert('조문객 정보를 찾을 수 없습니다. 방명록을 먼저 작성해주세요.');
+      return;
+    }
+    setIsComposerOpen(true);
+  };
+
   const handleSubmitMemory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!memoryText.trim() || isSubmitting) return;
+
+    const visitor = getVisitor();
+    if (!visitor) {
+      alert('조문객 정보를 찾을 수 없습니다. 방명록을 먼저 작성해주세요.');
+      return;
+    }
+    if (hasWrittenMemory()) {
+      alert('추억은 한 분당 한 번만 남기실 수 있어요. 이미 소중한 기억을 남겨주셨습니다.');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -247,7 +271,7 @@ export default function MemorialPark() {
       }
 
       const requestDto = {
-        visitorId: 1,
+        visitorId: visitor.visitorId,
         content: memoryText,
         visibility,
         selectedPhotoIndex: photoIndexValue,
@@ -266,15 +290,17 @@ export default function MemorialPark() {
         method: 'POST',
         body: formData,
       });
+      const data = await res.json();
 
-      if (res.ok) {
+      if (res.ok && data.success) {
+        markMemoryWritten();
         setMemoryText('');
         setSelectedFiles([]);
         setPreviewUrls([]);
         setSelectedPhotoIndex(0);
         setIsComposerOpen(false);
       } else {
-        alert('추념글 등록에 실패했습니다.');
+        alert(data.message || '추념글 등록에 실패했습니다.');
       }
     } catch {
       alert('서버 통신 중 오류가 발생했습니다.');
@@ -367,7 +393,7 @@ export default function MemorialPark() {
                 <br />한 장씩 이곳에 이어집니다.
               </p>
             </S.MemorySummary>
-            <button onClick={() => setIsComposerOpen(true)}>+ 추념하기</button>
+            <button onClick={handleOpenComposer}>+ 추념하기</button>
           </aside>
         </S.MemoryHeading>
 

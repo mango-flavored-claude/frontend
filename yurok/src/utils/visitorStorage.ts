@@ -25,3 +25,15 @@ export function getVisitor(): StoredVisitor | null {
         return null;
     }
 }
+
+// 추억 작성(POST .../memories)은 조문객 1명당 1번만 가능한 API라,
+// 한 번 남긴 뒤엔 버튼을 다시 눌러도 API를 또 부르지 않고 프론트에서 바로 막기 위한 플래그.
+const MEMORY_WRITTEN_KEY = "yurok_memory_written";
+
+export function markMemoryWritten() {
+    localStorage.setItem(MEMORY_WRITTEN_KEY, "true");
+}
+
+export function hasWrittenMemory(): boolean {
+    return localStorage.getItem(MEMORY_WRITTEN_KEY) === "true";
+}
