@@ -6,7 +6,7 @@ import { useUser } from '../../store/UserContext';
 import { saveMemorial } from '../../utils/memorialStorage';
 
 // 온라인 빈소 생성 API: POST /api/memorials (multipart/form-data)
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = "https://d2qa5spsddshr5.cloudfront.net";
 
 const BANK_OPTIONS = [
   { value: 'KB_KOOKMIN', label: 'KB국민은행' },

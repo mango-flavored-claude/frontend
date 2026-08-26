@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import Toast, { type ToastVariant } from '../../components/Toast';
 
 // 유족 회원가입 API: POST /api/users/signup
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = "https://d2qa5spsddshr5.cloudfront.net";
 
 const AFTER_SUCCESS_DELAY_MS = 1200; // 토스트를 잠깐 보여준 뒤 로그인 화면으로 이동
 

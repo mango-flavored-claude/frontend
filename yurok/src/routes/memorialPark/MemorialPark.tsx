@@ -85,7 +85,7 @@ const POSITIONS = buildFlowerPositions();
 
 export default function MemorialPark() {
   const key = useInviteToken();
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = "https://d2qa5spsddshr5.cloudfront.net";
 
   const [flowers, setFlowers] = useState<
     Array<{
