@@ -21,21 +21,6 @@ const flowerAppear = keyframes`
   }
 `;
 
-const toast = keyframes`
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -8px);
-  }
-  18%, 70% {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -5px);
-  }
-`;
-
 const sceneBrighten = keyframes`
   0%, 10% { opacity: 0.64; }
   42% { opacity: 0.46; }
@@ -77,6 +62,50 @@ const softFade = keyframes`
   100% {
     opacity: 0;
     backdrop-filter: blur(0);
+  }
+`;
+
+// 영정 화면에서 국화가 놓인 뒤, 아무 반응 없이 5초가 지나면 다시 어두워지며 이동을 안내하는 연출
+const idleDarken = keyframes`
+  0% { opacity: 0; }
+  100% { opacity: 0.55; }
+`;
+
+const idleTextIn = keyframes`
+  0% {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translate(-50%, calc(-50% + 8px));
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, -50%);
+  }
+`;
+
+// 추념 공간(추억관)에 처음 들어왔을 때 한 번 어두워졌다 밝아지며 안내 문구를 보여주는 연출
+const memoryIntroFade = keyframes`
+  0% { opacity: 0; }
+  18%, 62% { opacity: 1; }
+  100% { opacity: 0; }
+`;
+
+const memoryIntroTextAnim = keyframes`
+  0%, 10% {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(8px);
+  }
+  22%, 58% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translateY(-6px);
   }
 `;
 
@@ -237,29 +266,14 @@ export const OfferingFlower = styled.img<{
   ${({ $isNew, $scale, $rotation }) =>
     $isNew
       ? css`
-          animation: ${flowerAppear} 2.1s cubic-bezier(0.2, 0.75, 0.2, 1) both;
+          /* 안내 메시지로 "국화가 놓였습니다"를 먼저 읽은 뒤 국화가 생겨나도록,
+             안내 문구 4번째 줄(9s~12.2s)이 끝나갈 무렵에 애니메이션을 시작함 */
+          animation: ${flowerAppear} 2.1s cubic-bezier(0.2, 0.75, 0.2, 1) 12s both;
         `
       : css`
           opacity: 1;
           transform: scale(${$scale}) rotate(${$rotation}deg);
         `}
-`;
-
-export const CompleteToast = styled.div`
-  position: absolute;
-  z-index: 10;
-  top: 11%;
-  left: 50%;
-  padding: 0;
-  border: 0;
-  color: #3d3027;
-  background: transparent;
-  backdrop-filter: none;
-  font: 600 15px/1.65 "Batang", serif;
-  text-shadow: 0 5px 18px rgba(69, 50, 37, 0.13);
-  transform: translate(-50%, -8px);
-  opacity: 0;
-  animation: ${toast} 3.6s 11.1s ease both;
 `;
 
 export const EntranceDimmer = styled.div`
@@ -303,6 +317,9 @@ export const FuneralGuidance = styled.div`
     &:nth-child(3) {
       animation: ${guidanceLineAnim} 3.1s 6s ease-in-out both;
     }
+    &:nth-child(4) {
+      animation: ${guidanceLineAnim} 3.2s 9s ease-in-out both;
+    }
   }
 `;
 
@@ -332,6 +349,68 @@ export const ScrollButton = styled.button`
   i {
     font-style: normal;
     animation: ${bounce} 1.4s infinite;
+  }
+`;
+
+// 국화가 놓인 뒤 5초간 화면 전환이 없을 때, 다시 어두워지며 이동을 안내하는 오버레이
+export const IdlePromptDimmer = styled.div`
+  position: absolute;
+  z-index: 28;
+  inset: 0;
+  pointer-events: none;
+  background: #17120f;
+  opacity: 0;
+  animation: ${idleDarken} 1.6s ease-out forwards;
+`;
+
+export const IdlePromptText = styled.p`
+  position: absolute;
+  z-index: 29;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  width: min(640px, 80vw);
+  color: #fff;
+  text-align: center;
+  font: 700 22px/1.85 "Batang", serif;
+  text-shadow: 0 2px 7px rgba(16, 12, 10, 0.58);
+  opacity: 0;
+  filter: blur(3px);
+  animation: ${idleTextIn} 1.6s 0.3s ease-out forwards;
+`;
+
+// 추념 공간에 처음 들어왔을 때 한 번 어두워졌다 밝아지는 오버레이
+export const MemoryIntroOverlay = styled.div<{ $isRun: boolean }>`
+  position: fixed;
+  z-index: 56;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: #17120f;
+  opacity: 0;
+
+  ${({ $isRun }) =>
+    $isRun &&
+    css`
+      animation: ${memoryIntroFade} 3.6s ease-in-out both;
+    `}
+
+  p {
+    margin: 0;
+    width: min(640px, 80vw);
+    color: #fff;
+    text-align: center;
+    font: 700 22px/1.85 "Batang", serif;
+    text-shadow: 0 2px 7px rgba(16, 12, 10, 0.58);
+    opacity: 0;
+
+    ${({ $isRun }) =>
+      $isRun &&
+      css`
+        animation: ${memoryIntroTextAnim} 3.6s ease-in-out both;
+      `}
   }
 `;
 
