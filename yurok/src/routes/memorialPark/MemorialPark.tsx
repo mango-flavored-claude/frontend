@@ -12,6 +12,25 @@ interface MemorialHome {
   visitorCount?: number;
 }
 
+// 추억 목록 조회: GET /api/memorials/{inviteToken}/memories
+interface MemoryListItem {
+  memoryId: number;
+  visitorName: string;
+  relationship: string;
+  generatedImageUrl: string;
+}
+
+// 추억 상세 조회: GET /api/memorials/{inviteToken}/memories/{memoryId}?visitorId=...
+interface MemoryDetailResponse {
+  memoryId: number;
+  visitorName: string;
+  relationship: string;
+  content: string;
+  visibility: 'PUBLIC' | 'PRIVATE';
+  photoUrls: string[];
+}
+
+// 상세 보기 모달에 실제로 표시할 값(상세 조회 응답을 화면용으로 정리한 것)
 interface MemoryItem {
   id: number;
   text: string;
@@ -85,7 +104,9 @@ export default function MemorialPark() {
   const [memorial, setMemorial] = useState<MemorialHome | null>(null);
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [memories, setMemories] = useState<MemoryListItem[]>([]);
   const [selectedDetail, setSelectedDetail] = useState<MemoryItem | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showPageTransition, setShowPageTransition] = useState(false);
 
@@ -140,6 +161,66 @@ export default function MemorialPark() {
       cancelled = true;
     };
   }, [key, API_BASE]);
+
+  // 추억 목록 조회: GET /api/memorials/{inviteToken}/memories
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/memorials/${key}/memories`);
+        const data = await res.json();
+        if (!cancelled && res.ok && data.success && Array.isArray(data.result)) {
+          setMemories(data.result);
+        }
+      } catch {
+        // 실패해도 추억관 그리드가 비어있게 두면 되니 별도 에러 처리 없음
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [key, API_BASE]);
+
+  // 추억 상세 조회: GET /api/memorials/{inviteToken}/memories/{memoryId}?visitorId=...
+  // PRIVATE 추억은 작성자 본인만 조회 가능 — 서버가 visitorId로 판단함
+  const handleSelectMemory = async (item: MemoryListItem) => {
+    if (isDetailLoading) return;
+
+    const visitor = getVisitor();
+    if (!visitor) {
+      alert('조문객 정보를 찾을 수 없습니다. 방명록을 먼저 작성해주세요.');
+      return;
+    }
+
+    setIsDetailLoading(true);
+
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/memorials/${key}/memories/${item.memoryId}?visitorId=${visitor.visitorId}`
+      );
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.message || '비공개로 남겨진 추억이라 볼 수 없어요.');
+        return;
+      }
+
+      const detail: MemoryDetailResponse = data.result;
+      setSelectedDetail({
+        id: detail.memoryId,
+        text: detail.content,
+        author: detail.visitorName,
+        relation: detail.relationship,
+        imageUrl: detail.photoUrls[0] ?? item.generatedImageUrl,
+      });
+    } catch {
+      alert('서버 통신 중 오류가 발생했습니다.');
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
 
   const createFlowerData = (index: number, isNew: boolean) => {
     const posIndex = index % POSITIONS.length;
@@ -235,12 +316,13 @@ export default function MemorialPark() {
 
   // 추억 작성 팝업을 열기 전에 확인: 조문객 정보가 있어야 하고, 1인 1회 제한도 넘으면 안 됨
   const handleOpenComposer = () => {
-    if (hasWrittenMemory()) {
-      alert('추억은 한 분당 한 번만 남기실 수 있어요. 이미 소중한 기억을 남겨주셨습니다.');
+    const visitor = getVisitor();
+    if (!visitor) {
+      alert('조문객 정보를 찾을 수 없습니다. 방명록을 먼저 작성해주세요.');
       return;
     }
-    if (!getVisitor()) {
-      alert('조문객 정보를 찾을 수 없습니다. 방명록을 먼저 작성해주세요.');
+    if (hasWrittenMemory(visitor.visitorId)) {
+      alert('추억은 한 분당 한 번만 남기실 수 있어요. 이미 소중한 기억을 남겨주셨습니다.');
       return;
     }
     setIsComposerOpen(true);
@@ -255,7 +337,7 @@ export default function MemorialPark() {
       alert('조문객 정보를 찾을 수 없습니다. 방명록을 먼저 작성해주세요.');
       return;
     }
-    if (hasWrittenMemory()) {
+    if (hasWrittenMemory(visitor.visitorId)) {
       alert('추억은 한 분당 한 번만 남기실 수 있어요. 이미 소중한 기억을 남겨주셨습니다.');
       return;
     }
@@ -293,8 +375,9 @@ export default function MemorialPark() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        markMemoryWritten();
+        markMemoryWritten(visitor.visitorId);
         setMemoryText('');
+        setVisibility('PUBLIC');
         setSelectedFiles([]);
         setPreviewUrls([]);
         setSelectedPhotoIndex(0);
@@ -388,6 +471,7 @@ export default function MemorialPark() {
           </S.MemoryTitleWrap>
           <aside>
             <S.MemorySummary>
+              <b>{memories.length}개의 기억</b>
               <p>
                 조문객들이 남긴 마음이
                 <br />한 장씩 이곳에 이어집니다.
@@ -397,7 +481,48 @@ export default function MemorialPark() {
           </aside>
         </S.MemoryHeading>
 
-        <S.Garden></S.Garden>
+        <S.Garden>
+          {memories.map((item) => (
+            <S.MemoryCard key={item.memoryId} onClick={() => handleSelectMemory(item)}>
+              <S.MemoryPlaceholder>
+                {item.generatedImageUrl && (
+                  <img
+                    src={item.generatedImageUrl}
+                    alt=""
+                    style={{
+                      position: 'relative',
+                      zIndex: 1,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: '50%',
+                    }}
+                  />
+                )}
+                <span className="memory-index">
+                  기억 {String(item.memoryId).padStart(2, '0')}
+                </span>
+                <i className="placeholder-symbol" />
+                <p>
+                  기억으로 만든 사진이
+                  <br />
+                  이곳에 기록됩니다.
+                </p>
+              </S.MemoryPlaceholder>
+              <S.MemoryCopy>
+                <S.MemoryAuthor>
+                  <small>작성자</small>
+                  <strong>
+                    {item.visitorName} <em>{item.relationship}</em>
+                  </strong>
+                </S.MemoryAuthor>
+                <S.MemoryOpen>
+                  추념문 보기 <i>→</i>
+                </S.MemoryOpen>
+              </S.MemoryCopy>
+            </S.MemoryCard>
+          ))}
+        </S.Garden>
 
         <S.GardenEnd>
           <img src={publicAsset('image/chrysanthemum-offering-front.png')} alt="국화" />
@@ -460,6 +585,23 @@ export default function MemorialPark() {
           <S.AiPhotoGuide>
             테두리로 표시된 사진을 중심으로 추모 이미지를 만듭니다.
           </S.AiPhotoGuide>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 12,
+              color: '#65594f',
+              margin: '4px 0 8px',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={visibility === 'PRIVATE'}
+              onChange={(e) => setVisibility(e.target.checked ? 'PRIVATE' : 'PUBLIC')}
+            />
+            나만 보기
+          </label>
           <S.SubmitMemory type="submit" disabled={isSubmitting}>
             {isSubmitting ? '등록 중...' : '추념하기'}
           </S.SubmitMemory>
@@ -473,6 +615,20 @@ export default function MemorialPark() {
             ×
           </S.ModalClose>
           <p className="eyebrow">추념 기록</p>
+          {selectedDetail?.imageUrl && (
+            <img
+              src={selectedDetail.imageUrl}
+              alt={`${selectedDetail.author}님이 남긴 사진`}
+              style={{
+                width: '100%',
+                aspectRatio: '1 / 1',
+                objectFit: 'cover',
+                borderRadius: 14,
+                display: 'block',
+                marginBottom: 20,
+              }}
+            />
+          )}
           <S.DetailText>{selectedDetail?.text}</S.DetailText>
           <S.DetailAuthor>
             {selectedDetail?.author} · {selectedDetail?.relation}
