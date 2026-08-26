@@ -5,7 +5,7 @@ import Toast, { type ToastVariant } from '../../components/Toast';
 import { useUser } from '../../store/UserContext';
 
 // 유족 로그인 API: POST /api/users/login
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = "https://d2qa5spsddshr5.cloudfront.net";
 
 const AFTER_SUCCESS_DELAY_MS = 1000; // 토스트를 잠깐 보여준 뒤 신청 화면으로 이동
 
