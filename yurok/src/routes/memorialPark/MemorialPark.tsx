@@ -517,10 +517,6 @@ export default function MemorialPark() {
             </>
           )}
         </S.SceneStage>
-        <S.ScrollButton onClick={() => moveToSection(memoryRef)}>
-          <strong>고인과의 추억 이어보기</strong>
-          <i>↓</i>
-        </S.ScrollButton>
       </S.AltarSection>
 
       <S.MemorySection ref={memoryRef}>
