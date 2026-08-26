@@ -27,6 +27,8 @@ export default function Login() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    console.log(API_BASE);
+    
 
     try {
       const res = await fetch(`${API_BASE}/api/users/login`, {
