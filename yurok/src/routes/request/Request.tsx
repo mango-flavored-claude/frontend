@@ -120,7 +120,6 @@ export default function Request({
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
-  // 선택한 인원/보관기간에 맞는 가격을 요금표에서 찾아옴
   const selectedPrice =
     PRICE_TABLE[parseInt(formData.retention, 10)]?.[parseInt(formData.writers, 10)];
 
